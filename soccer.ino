@@ -3,16 +3,20 @@
 //Adam Muhammad
 
 #include <elapsedMillis.h>
+#include<Servo.h>
+#define servoPin 9
+
+Servo servo;
+
 
 //variables to change for setup
 int numBalls = 10;
 int numGoals = 2;
-int timeout = 5;  //seconds
 int distance;
 String username;
 String choice;
 elapsedMillis timeElapsed;
-int interval = 5000;
+int interval = 5000;        //timeout in milliseconds
 
 //variables for stats
 int timeTaken;
@@ -20,7 +24,8 @@ int goalsHit;
 
 //initialize variables for sensor readings
 int sensorReading;
-const int threshold = 200;
+const int threshold1 = 100;
+const int threshold2 = 50;
 
 //initialize pins for sensors and LEDs
 const int sensor1   = A0;
@@ -42,6 +47,9 @@ void setup() {
   digitalWrite(redPin1, LOW);
   digitalWrite(greenPin2, LOW);
   digitalWrite(redPin2, LOW);
+
+  servo.attach(servoPin);
+  servo.write(90);
   
   Serial.begin(9600);
 }
@@ -64,14 +72,14 @@ void loop() {
   Serial.println(choice);
 
   Serial.println("Initializing...");
+  delay(2000);
   int goal;
 
   //loop for number of balls
   for(int i=1; i<=numBalls; i++){
-    Serial.print("Ball number: ");
+    Serial.print("\n----Ball number: ");
     Serial.println(i);
-    Serial.println("----BALL LAUNCHED----");
-    delay(500);
+    launch();
 
     //choose a goal randomly
     goal = random(numGoals)+1;
@@ -88,7 +96,7 @@ void loop() {
           sensorReading = analogRead(sensor1);
 
           //if sensor registers a HIT
-          if (sensorReading >= threshold){
+          if (sensorReading >= threshold1){
             timeTaken += timeElapsed;
             goalsHit += 1;
             Serial.println("HIT!!!");
@@ -113,7 +121,7 @@ void loop() {
           
             sensorReading = analogRead(sensor2);
           
-            if (sensorReading >= threshold){
+            if (sensorReading >= threshold2){
               timeTaken += timeElapsed;
               goalsHit += 1;
               Serial.println("HIT!!!");
@@ -131,15 +139,35 @@ void loop() {
           break;
     }//end of switch
 
-  delay(2000);
+  delay(5000);
     
   }//end for for loop
 
   //print out statistics
-  Serial.println("----End of session----");
-  Serial.print("Accuracy: ");
-  Serial.println((float)goalsHit/numBalls);
-  Serial.print("Average time taken: ");
-  Serial.println(timeTaken/goalsHit);
+  printStats();
   delay(1000);
 }
+
+void printStats(){
+  Serial.println("\n----End of session----");
+  Serial.print("Accuracy: ");
+  Serial.print(goalsHit);
+  Serial.print(" out of ");
+  Serial.print(numBalls);
+  Serial.println(" hit.");
+  Serial.print("Average time taken: ");
+  Serial.print((float)timeTaken/goalsHit/1000);
+  Serial.println(" seconds");
+  Serial.println("Not bad!");
+  Serial.println();
+  delay(1000);
+}
+
+void launch(){
+  Serial.println("----BALL LAUNCHED----");
+  servo.write(145);
+  delay(100);
+  servo.write(90);
+  delay(500);
+}
+
