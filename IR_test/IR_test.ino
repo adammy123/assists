@@ -1,6 +1,7 @@
-#define irLEDPin 7
-#define irSensorPin 8
-#define redLEDPin 6
+#define irLEDPin 9
+#define irSensorPin 2
+#define redLEDPin 5
+#define greenLEDPin 4
 
 int signal;
 
@@ -22,20 +23,22 @@ int irRead(int readPin, int triggerPin)
 void setup() {
   pinMode(irLEDPin, OUTPUT);
   pinMode(irSensorPin, INPUT);
-  pinMode(redLEDPin, OUTPUT); 
+  pinMode(redLEDPin, OUTPUT);
+  pinMode(greenLEDPin, OUTPUT);  
   Serial.begin(9600); 
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
   signal = irRead(irSensorPin, irLEDPin);
-  if(signal == 0){
-    digitalWrite(redLEDPin, LOW);
-    delay(15);
-  }
   if(signal == 1){
     digitalWrite(redLEDPin, HIGH);
-    delay(5000);
+    digitalWrite(greenLEDPin, LOW);
+    
+  }
+  if(signal == 0){
+    digitalWrite(redLEDPin, LOW);
+    digitalWrite(greenLEDPin, HIGH);
   }
   Serial.println(signal);
 }
