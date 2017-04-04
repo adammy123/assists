@@ -110,7 +110,7 @@ void printStats(){
   Serial.print("Misses: ");
   Serial.println(numMisses);
   
-  Serial.print("Average time taken: ");
+  Serial.print("Average time for completed passes: ");
   Serial.print((float)timeTaken/numHits/1000);
   Serial.println(" seconds");
 
