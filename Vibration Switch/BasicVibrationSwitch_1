@@ -1,0 +1,24 @@
+#define inputPin 7
+#define LEDPin   3
+
+int state = 0;
+
+void setup() {
+  // put your setup code here, to run once:
+  pinMode(inputPin, INPUT);
+  pinMode(LEDPin, OUTPUT);
+  
+}
+
+void loop() {
+  // put your main code here, to run repeatedly:
+  state = digitalRead(inputPin);
+  if(state == HIGH){
+    digitalWrite(LEDPin, HIGH);
+    delay(1000);
+    digitalWrite(LEDPin, LOW);
+  }
+  else{
+    digitalWrite(LEDPin, LOW);
+  }
+}
