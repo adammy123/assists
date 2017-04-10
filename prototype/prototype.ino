@@ -1,7 +1,13 @@
-#define irLEDPin 9
-#define irSensorPin 2
-#define redLEDPin 5
-#define greenLEDPin 4
+#define irLED_1_Pin 9
+#define irSensor_1_Pin 2
+#define irLED_2_Pin 10
+#define irSensor_2_Pin 3
+
+#define redLED_1_Pin 5
+#define greenLED_1_Pin 4
+#define redLED_2_Pin 6
+#define greenLED_2_Pin 7
+
 
 #include "TimerOne.h"
 #include "LightControl.h"
@@ -9,7 +15,7 @@
 
 ////////////
 int numBalls = 5;
-const int numGoals = 1;
+const int numGoals = 2;
 int interval = 5000;
 ////////////
 
@@ -20,21 +26,27 @@ int numHits;
 int numMisses;
 int timeTaken;
 
-LightControl light1(redLEDPin, greenLEDPin);
-LightControl lights[numGoals] = light1;
+LightControl light1(redLED_1_Pin, greenLED_1_Pin);
+LightControl light2(redLED_2_Pin, greenLED_2_Pin);
+LightControl lights[numGoals] = {light1, light2};
 
 bool hit[numGoals];
+bool miss[numGoals];
 bool sensing[numGoals];
 
 
 void setup() {
-  pinMode(irLEDPin, OUTPUT);
-  pinMode(irSensorPin, INPUT_PULLUP);
+  pinMode(irLED_1_Pin, OUTPUT);
+  pinMode(irSensor_1_Pin, INPUT_PULLUP);
+  pinMode(irLED_2_Pin, OUTPUT);
+  pinMode(irSensor_2_Pin, INPUT_PULLUP);
 
-  attachInterrupt(digitalPinToInterrupt(irSensorPin), goalState, FALLING);
+  attachInterrupt(digitalPinToInterrupt(irSensor_1_Pin), goalState1, FALLING);
+  attachInterrupt(digitalPinToInterrupt(irSensor_2_Pin), goalState2, FALLING);
   
   Timer1.initialize(26); //26 us is 38 kHz
-  Timer1.pwm(irLEDPin, 512);
+  Timer1.pwm(irLED_1_Pin, 512);
+  Timer1.pwm(irLED_2_Pin, 512);
 
   Serial.begin(9600);
 }
@@ -48,12 +60,18 @@ void loop()
 
   //flash lights to show starting
   for(int k = 0; k < 5; k++){
-    lights[0].red();
+    for(int i = 0; i < numGoals; i++){
+      lights[i].red();
+    }
     delay(250);
-    lights[0].green();
+    for(int i = 0; i < numGoals; i++){
+      lights[i].green();
+    }
     delay(250);
   }
-  lights[0].off();
+  for(int i = 0; i < numGoals; i++){
+    lights[i].off();
+  }
   delay(1500);
   Serial.println("Begin");
 
@@ -61,7 +79,11 @@ void loop()
   for(int i=1; i<=numBalls; i++){
     delay(1000);
     chooseGoal(numGoals);
+    Serial.print("Goal ");
+    Serial.print(liveGoal+1);
+    Serial.print(": ");
     hit[liveGoal] = false;
+    miss[liveGoal] = false;
     timeElapsed = 0;
     
     while (timeElapsed < interval){
@@ -73,15 +95,33 @@ void loop()
         lights[liveGoal].off();
         timeTaken += timeElapsed;
         numHits += 1;
+        }else if(miss[liveGoal]){
+          numMisses += 1;
+          Serial.println("MISS (wrong goal)");
+          for(int j = 0; j < 3; j++){     //flash lights to show miss
+            for(int i = 0; i < numGoals; i++){
+              lights[i].red();
+            }  
+            delay(250);
+            for(int i = 0; i < numGoals; i++){
+              lights[i].off();
+            } 
+            delay(250);
+          }
+          miss[liveGoal] = false;
         }
       }
-    if(!hit[liveGoal]){
+    if(!hit[liveGoal] && miss[liveGoal]){
       numMisses += 1;
-      Serial.println("MISS");
+      Serial.println("MISS (time)");
       for(int j = 0; j < 3; j++){     //flash lights to show miss
-        lights[liveGoal].red();
+        for(int i = 0; i < numGoals; i++){
+          lights[i].red();
+        } 
         delay(250);
-        lights[liveGoal].off();
+        for(int i = 0; i < numGoals; i++){
+          lights[i].off();
+        } 
         delay(250);
       }
     }
@@ -90,8 +130,20 @@ void loop()
   delay(5000); 
 }
 
-void goalState(){
-  hit[liveGoal] = true;
+void goalState1(){        //probably best to create goal objects
+  if(liveGoal == 0){
+    hit[liveGoal] = true;
+  }else{
+    miss[liveGoal] = true;
+  }
+}
+
+void goalState2(){
+  if(liveGoal == 1){
+    hit[liveGoal] = true;
+  }else{
+    miss[liveGoal] = true;
+  }
 }
 
 void chooseGoal(int _numGoals)
