@@ -31,8 +31,9 @@ LightControl light2(redLED_2_Pin, greenLED_2_Pin);
 LightControl lights[numGoals] = {light1, light2};
 
 bool hit[numGoals];
-bool miss[numGoals];
-bool sensing[numGoals];
+bool timeExpire[numGoals];
+bool wrongGoal[numGoals];
+bool sensing;
 
 
 void setup() {
@@ -83,21 +84,23 @@ void loop()
     Serial.print(liveGoal+1);
     Serial.print(": ");
     hit[liveGoal] = false;
-    miss[liveGoal] = false;
+    timeExpire[liveGoal] = false;
+    wrongGoal[liveGoal] = false;
     timeElapsed = 0;
     
     while (timeElapsed < interval){
-      if(hit[liveGoal] && sensing[liveGoal]){
-        Serial.println("HIT");       //only works if it prints something in this loop, not sure why
-        sensing[liveGoal] = false;
+      if(hit[liveGoal] && sensing){
+        Serial.println("HIT");
+        sensing = false;
         lights[liveGoal].green();
         delay(1000);
         lights[liveGoal].off();
         timeTaken += timeElapsed;
         numHits += 1;
-        }else if(miss[liveGoal]){
+        }else if(wrongGoal[liveGoal] && sensing){
           numMisses += 1;
           Serial.println("MISS (wrong goal)");
+          sensing = false;
           for(int j = 0; j < 3; j++){     //flash lights to show miss
             for(int i = 0; i < numGoals; i++){
               lights[i].red();
@@ -108,12 +111,12 @@ void loop()
             } 
             delay(250);
           }
-          miss[liveGoal] = false;
         }
       }
-    if(!hit[liveGoal] && miss[liveGoal]){
+    if(!hit[liveGoal] && !wrongGoal[liveGoal] && sensing){
       numMisses += 1;
       Serial.println("MISS (time)");
+      sensing = false;
       for(int j = 0; j < 3; j++){     //flash lights to show miss
         for(int i = 0; i < numGoals; i++){
           lights[i].red();
@@ -134,7 +137,7 @@ void goalState1(){        //probably best to create goal objects
   if(liveGoal == 0){
     hit[liveGoal] = true;
   }else{
-    miss[liveGoal] = true;
+    wrongGoal[liveGoal] = true;
   }
 }
 
@@ -142,7 +145,7 @@ void goalState2(){
   if(liveGoal == 1){
     hit[liveGoal] = true;
   }else{
-    miss[liveGoal] = true;
+    wrongGoal[liveGoal] = true;
   }
 }
 
@@ -150,7 +153,7 @@ void chooseGoal(int _numGoals)
 {
   liveGoal = random(_numGoals);
   lights[liveGoal].red();
-  sensing[liveGoal] = true;
+  sensing = true;
 }
 
 void printStats(){
