@@ -1,13 +1,8 @@
 #define irLED_1_Pin 9
 #define irSensor_1_Pin 2
-#define irLED_2_Pin 10
-#define irSensor_2_Pin 3
 
 #define redLED_1_Pin 5
 #define greenLED_1_Pin 4
-#define redLED_2_Pin 6
-#define greenLED_2_Pin 7
-
 
 #include "TimerOne.h"
 #include "LightControl.h"
@@ -15,8 +10,9 @@
 
 ////////////
 int numBalls = 5;
-const int numGoals = 2;
-int interval = 3000;
+const int numGoals = 1;
+int interval = 5000;
+////////////
 
 elapsedMillis timeElapsed;
 int liveGoal;
@@ -26,9 +22,8 @@ int numMisses;
 int timeTaken;
 
 LightControl light1(redLED_1_Pin, greenLED_1_Pin);
-LightControl light2(redLED_2_Pin, greenLED_2_Pin);
-//LightControl lights[numGoals] = {light1};      //for testing one goal
-LightControl lights[numGoals] = {light1, light2};
+LightControl lights[numGoals] = {light1};
+
 
 bool hit[numGoals];
 bool timeExpire[numGoals];
@@ -39,15 +34,12 @@ bool sensing;
 void setup() {
   pinMode(irLED_1_Pin, OUTPUT);
   pinMode(irSensor_1_Pin, INPUT_PULLUP);
-  pinMode(irLED_2_Pin, OUTPUT);
-  pinMode(irSensor_2_Pin, INPUT_PULLUP);
+
 
   attachInterrupt(digitalPinToInterrupt(irSensor_1_Pin), goalState1, FALLING);
-  attachInterrupt(digitalPinToInterrupt(irSensor_2_Pin), goalState2, FALLING);
   
   Timer1.initialize(26); //26 us is 38 kHz
   Timer1.pwm(irLED_1_Pin, 512);
-  Timer1.pwm(irLED_2_Pin, 512);
 
   Serial.begin(9600);
 }
@@ -135,14 +127,6 @@ void loop()
 
 void goalState1(){        //probably best to create goal objects
   if(liveGoal == 0){
-    hit[liveGoal] = true;
-  }else{
-    wrongGoal[liveGoal] = true;
-  }
-}
-
-void goalState2(){
-  if(liveGoal == 1){
     hit[liveGoal] = true;
   }else{
     wrongGoal[liveGoal] = true;
