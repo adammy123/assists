@@ -79,7 +79,6 @@ void loop()
   //run the drill
   for(int i=1; i<=numBalls; i++){
     delay(1000);
-    chooseGoal(numGoals);
     Serial.print("Goal ");
     Serial.print(liveGoal+1);
     Serial.print(": ");
