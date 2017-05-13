@@ -10,7 +10,7 @@
 
 ////////////
 int numBalls = 100;
-const int numGoals = 2;
+const int numGoals = 1;
 int interval = 3000;
 ////////////
 
@@ -29,6 +29,8 @@ int numHits;
 int numMisses;
 int timeTaken;
 
+int count = 0;
+
 bool timeout;
 int time_waiting;
 
@@ -38,6 +40,8 @@ int time_waiting;
 bool goalStatus = false;
 bool sensing;
 
+bool chosen = true;
+bool notChosen = false;
 
 void setup() {
   Serial.begin(115200);
@@ -61,88 +65,80 @@ void loop()
   numHits = 0;
   numMisses = 0;
   timeTaken = 0;
-
-  //flash lights to show starting
-//  for(int k = 0; k < 5; k++){
-//    for(int i = 0; i < numGoals; i++){
-//      lights[i].red();
-//    }
-//    delay(250);
-//    for(int i = 0; i < numGoals; i++){
-//      lights[i].green();
-//    }
-//    delay(250);
-//  }
-//  for(int i = 0; i < numGoals; i++){
-//    lights[i].off();
-//  }
-//  delay(1500);
-  Serial.println("Begin");
+  Serial.println("Begin Base");
 
   //run the drill
   for(int i=1; i<=numBalls; i++){
-    lights.red();
-    delay(1000);
-    lights.green();
+    delay(2000);
     chooseGoal(numGoals);
     Serial.print("Chosen Goal ");
     Serial.print(liveGoal+1);
     Serial.print(": ");
-    goalStatus = false;
     timeElapsed = 0;
 
 
     //tell goal it is the chosen one
-//    radio.openWritingPipe(b_pipes[0]);
-//    radio.stopListening();
-//    radio.write( &liveGoal, sizeof(liveGoal) );
-//    radio.startListening();
+//      radio.openWritingPipe(b_pipes[liveGoal]);
+//      radio.stopListening();
+//      radio.write( &chosen, sizeof(chosen) );
+//      radio.startListening();
 
     
-    //keep reading the goal to see if it is hit
-    while (timeElapsed < interval){
+//    //keep reading the goal to see if it is hit
+    while (sensing){
+
+      goalStatus = false;
 
       radio.openWritingPipe(b_pipes[liveGoal]);
       radio.stopListening();
-      radio.write( &liveGoal, sizeof(liveGoal) );
+      radio.write( &sensing, sizeof(sensing) );
       radio.startListening();
 
-//      Serial.println("Checking");
+      
       time_waiting = millis();
       timeout = false;
       while(!radio.available() && !timeout){
-        if(millis() - time_waiting > 250){
+        if(millis() - time_waiting > interval){
           timeout = true;
-//          Serial.println("Timeout");
+          sensing = false;
+          Serial.println("Timeout");
         }
       }
 
       if(!timeout){
         radio.read( &goalStatus, sizeof(goalStatus) );
+//        Serial.print("goal: ");
 //        Serial.println(goalStatus);
       }
-      
+       
       if(goalStatus && sensing){
         Serial.println("HIT");
         sensing = false;
         timeTaken += timeElapsed;
         numHits += 1;
-        liveGoal = 2;
         }
 
         delay(10);
     }
 
-    if(!goalStatus && sensing){
+    if(timeout){
       numMisses += 1;
       Serial.println("MISS (time)");
       sensing = false;
-      liveGoal = 2;
+      
     }
-    
+
+      radio.openWritingPipe(b_pipes[liveGoal]);
+      radio.stopListening();
+      radio.write( &sensing, sizeof(sensing) );
+      radio.startListening();
+      timeout = false;
+
+      delay(10);
+  
   }
-  printStats();
-  delay(5000); 
+//  printStats();
+//  delay(5000); 
 }
 
 void chooseGoal(int _numGoals)
