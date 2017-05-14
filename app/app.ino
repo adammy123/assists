@@ -1,5 +1,3 @@
-//MOSTLY WORKING - only issue is LED always reset to high. Just swapped the toggle to default low, so maybe that'll change it.
-
 #include <ESP8266WiFi.h>
 #include <Time.h>
 //////////////////////
