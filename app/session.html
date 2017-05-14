@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<style>p{font-size:50pt;}</style>
+<script>
+	var s=-3;
+	function add(){
+		s+=0.1;
+		document.getElementById('time').innerHTML = s.toFixed(1); 
+		stopwatch();
+	}
+
+	function stopwatch() {
+		var t = setTimeout(add, 100);
+	}
+
+</script>
+<body onload="stopwatch()">
+<p style="font-size: 50pt">Starting new session...</p>
+<p id="time">0</p>
+<button type="button" onclick="location.href = '/results';" style="height:50px;width:200px">See results</button>
+</body>
+</html>
