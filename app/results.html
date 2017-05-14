@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<style>
+	div{font-size:50pt;}
+	table,th,td{border: 1px solid black; font-size:30pt;}
+	button{height:50px;width:200px;font-size:30pt;}
+</style>
+<script>
+function startTime() {
+    var today = new Date();
+    var dateString = today.toLocaleDateString();
+    var timeString = today.toLocaleTimeString();
+    document.getElementById('date').innerHTML = "Date: " + dateString;
+    document.getElementById('time').innerHTML = "Time: " + timeString;}
+</script>
+<body onload="startTime()">
+<div id="session">Session: X</div>
+<div id="date"></div>
+<div id="time"></div>
+<div id="score">Score: </div>
+<div id="timeTaken">Time Taken: </div>
+<table>
+  <tr><th>Ball #</th><th>Target</th><th>Hit?</th><th>Time</th></tr>
+  <tr><td>1</td><td>X</td><td>HIT</td><td>X</td></tr>
+  <tr><td>2</td><td>X</td><td>HIT</td><td>X</td></tr>
+  <tr><td>3</td><td>X</td><td>HIT</td><td>X</td></tr>
+  <tr><td>4</td><td>X</td><td>HIT</td><td>X</td></tr>
+  <tr><td>5</td><td>X</td><td>HIT</td><td>X</td></tr>
+  <tr><td>6</td><td>X</td><td>HIT</td><td>X</td></tr>
+  <tr><td>7</td><td>X</td><td>HIT</td><td>X</td></tr>
+  <tr><td>8</td><td>X</td><td>HIT</td><td>X</td></tr>
+  <tr><td>9</td><td>X</td><td>HIT</td><td>X</td></tr>
+  <tr><td>10</td><td>X</td><td>HIT</td><td>X</td></tr>
+</table>
+<br>
+<button type="button" onclick="location.href = '/';">End</button>
+</body>
+</html>
