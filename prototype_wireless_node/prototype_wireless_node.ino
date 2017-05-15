@@ -13,6 +13,8 @@
 
 RF24 radio(7,8);
 
+int goalNumber = 2;
+
 const uint64_t b_pipes[6] = {0x0F0F0F0F11LL, 0x0F0F0F0F22LL};  
 const uint64_t n_pipes[6] = {0x1F1F1F1F11LL, 0x1F1F1F1F22LL};
 
@@ -20,14 +22,13 @@ LightControl lights(redLEDPin, greenLEDPin);
 
 bool goalStatus = false;
 bool chosen = false;
+bool goal = false;
 
 int time_wait;
 bool timeout;
 int liveGoal;
 
 int count;
-
-int goalNumber = 1;
 
 bool listening;
 
@@ -62,43 +63,37 @@ void setup() {
 void loop()
 {
   if(!chosen){
+    lights.off();
     time_wait = millis();
     timeout = false;
     while(!radio.available() && !timeout){
       if(millis() - time_wait > 250){
         timeout = true;
-//        Serial.println("Timeout");
       }
     }
 
-  if(!timeout){
-    while(radio.available()){
-      radio.read( &chosen, sizeof(chosen) );
-      Serial.println("reading");
-    }
+    if(!timeout){
+      while(radio.available()){
+        radio.read( &chosen, sizeof(chosen) );
+      }
     }
   }
     
 
-    if(chosen){
+  if(chosen){
+    lights.red();
 
-//      Serial.println("Goal chosen");
-//      lights.red();
-
-      if(goalStatus){
-        radio.stopListening();
-        radio.openWritingPipe(n_pipes[goalNumber-1]);
-        while( !radio.write( &goalStatus, sizeof(goalStatus) ))
-        {
-          Serial.println("bad send");
-        }
-        Serial.print("good send ");
-        Serial.println(goalStatus);
-        radio.startListening();
-        lights.green();
-        delay(2000);
-        lights.off();
-        goalStatus = false;
+    if(goalStatus){
+      goal = true;
+      radio.stopListening();
+      radio.openWritingPipe(n_pipes[goalNumber-1]);
+      while( !radio.write( &goalStatus, sizeof(goalStatus) ))
+      {
+          //makes sure that it gets sent
+      }
+      radio.startListening();
+      lights.green();
+      goalStatus = false;
       }
 
       time_wait = millis();
@@ -106,21 +101,38 @@ void loop()
       while(!radio.available() && !timeout){
         if(millis() - time_wait > 250){
           timeout = true;
-//          Serial.println("Time");
         }
       }
  
       if(!timeout){
         while(radio.available()){
           radio.read( &chosen, sizeof(chosen) );
-          Serial.print("not chosen: ");
-          Serial.println(chosen);
         } 
+
+        if(goal){
+          lights.green();
+          delay(2000);
+          lights.off();
+        }else{
+          lights.red();
+          delay(500);
+          lights.off();
+          delay(500);
+          lights.red();
+          delay(500);
+          lights.off();
+          delay(500);
+          lights.red();
+          delay(500);
+        }
+        goal = false;
       }
-  }
+    }
 }
 
 void goalState(){        //probably best to create goal objects
-  goalStatus = true;
+  if(chosen){
+    goalStatus = true;
+  }
 }
 
