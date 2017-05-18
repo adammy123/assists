@@ -2,26 +2,29 @@
 <html>
 <style>p{font-size:50pt;}</style>
 <script>
-	var s=3;
+	
 	var totalBalls = 3;
 	var	currentBall = 1;
 
+	var intervalTime = 3;
+	var goTime = 0.5;
+
 	function add(){
-		s-=0.1;
+		intervalTime-=0.1;
 
 		// display GO! for 0.5 seconds after reaching 0.0
-		if(s < -0.1){
+		if(intervalTime < -0.1){
 			document.getElementById('time').style.display = 'none';
 			document.getElementById('go').style.display = 'block';
 		} 
 		else{
 			document.getElementById('go').style.display = 'none';
-			document.getElementById('time').innerHTML = s.toFixed(1); 
+			document.getElementById('time').innerHTML = intervalTime.toFixed(1); 
 		}
 
 		// resets timer for next ball
-		if(s < -0.5){
-			s = 3;
+		if(intervalTime < -goTime){
+			intervalTime = 3;
 			currentBall += 1;
 			if (currentBall > totalBalls){
 				document.getElementById('button').style.display ='block';
