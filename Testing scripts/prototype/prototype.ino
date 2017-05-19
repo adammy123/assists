@@ -4,9 +4,9 @@
 #define irSensor_2_Pin 3
 
 #define redLED_1_Pin 5
-#define greenLED_1_Pin 4
-#define redLED_2_Pin 6
-#define greenLED_2_Pin 7
+#define greenLED_1_Pin 6
+#define redLED_2_Pin 7
+#define greenLED_2_Pin 8
 
 
 #include "TimerOne.h"
@@ -15,7 +15,7 @@
 
 ////////////
 int numBalls = 5;
-const int numGoals = 2;
+const int numGoals = 1;
 int interval = 3000;
 
 elapsedMillis timeElapsed;
@@ -27,8 +27,8 @@ int timeTaken;
 
 LightControl light1(redLED_1_Pin, greenLED_1_Pin);
 LightControl light2(redLED_2_Pin, greenLED_2_Pin);
-//LightControl lights[numGoals] = {light1};      //for testing one goal
-LightControl lights[numGoals] = {light1, light2};
+LightControl lights[numGoals] = {light1};      //for testing one goal
+//LightControl lights[numGoals] = {light1, light2};
 
 bool hit[numGoals];
 bool timeExpire[numGoals];
@@ -79,6 +79,7 @@ void loop()
   //run the drill
   for(int i=1; i<=numBalls; i++){
     delay(1000);
+    chooseGoal(numGoals);
     Serial.print("Goal ");
     Serial.print(liveGoal+1);
     Serial.print(": ");
@@ -129,12 +130,13 @@ void loop()
     }
   }
   printStats();
-  delay(5000); 
+  delay(3000); 
 }
 
 void goalState1(){        //probably best to create goal objects
   if(liveGoal == 0){
     hit[liveGoal] = true;
+    Serial.println("hit it");
   }else{
     wrongGoal[liveGoal] = true;
   }
