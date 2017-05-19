@@ -1,5 +1,6 @@
 #include <ESP8266WiFi.h>
 #include <Time.h>
+#include <Wire.h>
 
 //////////////////////
 // WiFi Definitions //
@@ -11,7 +12,7 @@ WiFiServer server(80);
 ////////////////////////
 // System Definitions //
 ////////////////////////
-const int sessionNumber = 1;
+int sessionNumber;
 const int totalBalls = 2;
 const int intervalTime = 3;   //seconds
 const float goTime = 0.5;     //seconds
@@ -19,13 +20,15 @@ const float goTime = 0.5;     //seconds
 // Arrays to hold session results
 int target[totalBalls] = {0};
 int hit[totalBalls] = {0};
-float timeTaken[totalBalls] = {0.0};
+int timeTaken[totalBalls] = {0};
 
 // Overall results
 int totalScore = 0;
-float totalTimeTaken = 0.0;
+int totalTimeTaken = 0;
 
+// HTML request file to send to server
 String html_string;
+bool _reset = false;
 
 void setupWiFi(){
   WiFi.mode(WIFI_AP);
@@ -37,12 +40,6 @@ void setupWiFi(){
     AP_NameChar[i] = AP_NameString.charAt(i);
 
   WiFi.softAP(AP_NameChar, WiFiAPPSK);
-}
-
-void setup(){
-  Serial.begin(115200);
-  setupWiFi();
-  server.begin();
 }
 
 String home_(String html_string){
@@ -169,6 +166,37 @@ String results(String html_string){
   return html_string;
 }
 
+void requestResults(){
+  Wire.requestFrom(7, 3*totalBalls);
+  for(int k=0; k<totalBalls; k++){
+    target[k] = Wire.read();
+  }
+  for(int k=0; k<totalBalls; k++){
+    hit[k] = Wire.read();
+  }
+  for(int k=0; k<totalBalls; k++){
+    timeTaken[k] = Wire.read();
+  }  
+}
+
+void resetStats(){
+  target[totalBalls] = {0};
+  hit[totalBalls] = {0};
+  timeTaken[totalBalls] = {0};
+  totalScore = 0;
+  totalTimeTaken = 0;
+  sessionNumber = sessionNumber + 1;
+  _reset = true;
+}
+
+void setup(){
+  Serial.begin(115200);
+  Wire.begin(8);
+  setupWiFi();
+  server.begin();
+  sessionNumber = 0;
+}
+
 void loop() 
 {
   // Check if a client has connected
@@ -188,16 +216,24 @@ void loop()
 
   // results page
   if (req.indexOf("/results") > 0) {
+    requestResults();
     html_string = results(html_string);
   }
 
   // session page
   else if (req.indexOf("/session") > 0) {
+    Wire.beginTransmission(7);
+    Wire.write(1);
+    Wire.endTransmission();
+    _reset = false;
     html_string = session(html_string);
   }
 
   // home page
   else {
+    if(!_reset){
+      resetStats();
+    }
     html_string = home_(html_string);
   }
   
@@ -205,7 +241,6 @@ void loop()
   client.print(html_string);
   delay(1);
   Serial.println("Client disonnected");
-
   // The client will actually be disconnected 
   // when the function returns and 'client' object is detroyed
 }
