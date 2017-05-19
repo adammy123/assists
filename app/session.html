@@ -2,10 +2,38 @@
 <html>
 <style>p{font-size:50pt;}</style>
 <script>
-	var s=-3;
+	
+	var totalBalls = 3;
+	var	currentBall = 1;
+
+	var intervalTime = 3;
+	var goTime = 0.5;
+
 	function add(){
-		s+=0.1;
-		document.getElementById('time').innerHTML = s.toFixed(1); 
+		intervalTime-=0.1;
+
+		// display GO! for 0.5 seconds after reaching 0.0
+		if(intervalTime < -0.1){
+			document.getElementById('time').style.display = 'none';
+			document.getElementById('go').style.display = 'block';
+		} 
+		else{
+			document.getElementById('go').style.display = 'none';
+			document.getElementById('time').innerHTML = intervalTime.toFixed(1); 
+		}
+
+		// resets timer for next ball
+		if(intervalTime < -goTime){
+			intervalTime = 3;
+			currentBall += 1;
+			if (currentBall > totalBalls){
+				document.getElementById('button').style.display ='block';
+				clearTimeout(t);
+			}
+			document.getElementById('time').style.display = 'block';
+			document.getElementById('numBalls').innerHTML = 'Ball: ' + currentBall;
+		}
+		
 		stopwatch();
 	}
 
@@ -14,9 +42,13 @@
 	}
 
 </script>
+
 <body onload="stopwatch()">
-<p style="font-size: 50pt">Starting new session...</p>
-<p id="time">0</p>
-<button type="button" onclick="location.href = '/results';" style="height:50px;width:200px">See results</button>
+<p id="title">Starting new session...</p>
+<p id="numBalls">Ball: 1</p>
+<p id="time" style="font-size: 200pt; text-align: center;">0</p>
+<p id="go" style="font-size: 200pt; background-color: rgb(0, 255, 0); text-align: center; display: none;">GO!</p>
+
+<button id="button" type="button" onclick="location.href = '/results';" style="height:100px;width:500px; margin: 0 auto; display: none;">See results</button>
 </body>
 </html>
