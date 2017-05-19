@@ -13,7 +13,7 @@
 
 RF24 radio(7,8);
 
-int goalNumber = 2;
+int goalNumber = 1;
 
 const uint64_t b_pipes[6] = {0x0F0F0F0F11LL, 0x0F0F0F0F22LL};  
 const uint64_t n_pipes[6] = {0x1F1F1F1F11LL, 0x1F1F1F1F22LL};
@@ -63,12 +63,14 @@ void setup() {
 void loop()
 {
   if(!chosen){
+    Serial.println("not chosen");
     lights.off();
     time_wait = millis();
     timeout = false;
-    while(!radio.available() && !timeout){
+    while(!radio.available() && !timeout){        //might not need timeout checker
       if(millis() - time_wait > 250){
         timeout = true;
+        Serial.println("timeout");
       }
     }
 
@@ -83,7 +85,10 @@ void loop()
   if(chosen){
     lights.red();
 
+    Serial.println("Chosen");
+
     if(goalStatus){
+      Serial.println("goal");
       goal = true;
       radio.stopListening();
       radio.openWritingPipe(n_pipes[goalNumber-1]);
@@ -94,7 +99,7 @@ void loop()
       radio.startListening();
       lights.green();
       goalStatus = false;
-      }
+     }
 
       time_wait = millis();
       timeout = false;
