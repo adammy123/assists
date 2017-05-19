@@ -1,5 +1,4 @@
 #include "TimerOne.h"
-#include "LightControl.h"
 #include <elapsedMillis.h>
 #include <SPI.h>
 #include "RF24.h"
@@ -10,7 +9,7 @@
 
 ////////////
 int numBalls = 5;
-const int numGoals = 1;
+const int numGoals = 2;
 int interval = 3000;
 ////////////
 
@@ -19,7 +18,7 @@ RF24 radio(7,8);
 const uint64_t b_pipes[6] = {0x0F0F0F0F11LL, 0x0F0F0F0F22LL};  
 const uint64_t n_pipes[6] = {0x1F1F1F1F11LL, 0x1F1F1F1F22LL};
 
-LightControl lights(redLEDPin, greenLEDPin);
+//LightControl lights(redLEDPin, greenLEDPin);
 
 
 elapsedMillis timeElapsed;
@@ -78,50 +77,52 @@ void loop()
 
  
     while (sensing){
-
+      Serial.println("sensing");
       goalStatus = false;
 
       radio.openWritingPipe(b_pipes[liveGoal]);
       radio.stopListening();
-      radio.write( &sensing, sizeof(sensing) );
+      while( !radio.write( &sensing, sizeof(sensing) )){
+//        Serial.println("choice send");
+      }
+//      Serial.println("Sent");
       radio.startListening();
 
-      
-      time_waiting = millis();
-      timeout = false;
-      while(!radio.available() && !timeout){
-        if(millis() - time_waiting > interval){
-          timeout = true;
-          sensing = false;
-        }
+      while(!radio.available()){
+
+//        Serial.print("waiting");
+//        Serial.println(liveGoal);
+//        if(millis() - time_waiting > interval){
+//          timeout = true;
+//          sensing = false;
+//        }
       }
 
-      if(!timeout){
+      while(radio.available()){
         radio.read( &goalStatus, sizeof(goalStatus) );
+//        Serial.println("read");
       }
        
-      if(goalStatus && sensing){
+      if(goalStatus){
         Serial.println("HIT");
-        sensing = false;
         timeTaken += timeElapsed;
         numHits += 1;
-        }
+      }else{
+       numMisses += 1;
+       Serial.println("MISS (time)");
+      }
 
-        delay(10);
-    }
-
-    if(timeout){
-      numMisses += 1;
-      Serial.println("MISS (time)");
       sensing = false;
-      
     }
 
-      radio.openWritingPipe(b_pipes[liveGoal]);
-      radio.stopListening();
-      radio.write( &sensing, sizeof(sensing) );
-      radio.startListening();
-      timeout = false;
+    
+      
+
+//      radio.openWritingPipe(b_pipes[liveGoal]);
+//      radio.stopListening();
+//      radio.write( &sensing, sizeof(sensing) );
+//      radio.startListening();
+//      timeout = false;
 
       delay(10);
   
