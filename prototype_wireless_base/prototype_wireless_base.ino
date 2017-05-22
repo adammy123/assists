@@ -10,7 +10,7 @@
 
 ////////////
 int numBalls = 5;
-const int numGoals = 1;
+const int numGoals = 2;
 int interval = 3000;
 ////////////
 

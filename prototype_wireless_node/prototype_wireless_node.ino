@@ -13,7 +13,7 @@
 
 RF24 radio(7,8);
 
-int goalNumber = 1;
+int goalNumber = 2;
 
 const uint64_t b_pipes[6] = {0x0F0F0F0F11LL, 0x0F0F0F0F22LL};  
 const uint64_t n_pipes[6] = {0x1F1F1F1F11LL, 0x1F1F1F1F22LL};
@@ -24,7 +24,7 @@ bool goalStatus = false;
 bool chosen = false;
 bool goal = false;
 
-int time_wait;
+unsigned long time_wait;
 bool timeout;
 int liveGoal;
 
@@ -42,7 +42,7 @@ void setup() {
   Timer1.initialize(26); //26 us is 38 kHz
   Timer1.pwm(irLEDPin, 512);
 
-  Serial.begin(115200);
+//  Serial.begin(115200);
   delay(1000);
 
   radio.begin();
@@ -54,8 +54,8 @@ void setup() {
   radio.startListening();
 
   delay(500);
-  Serial.print("Begin ");
-  Serial.println(goalNumber);
+//  Serial.print("Begin ");
+//  Serial.println(goalNumber);
   lights.off();
   listening = true;
 }
@@ -63,14 +63,14 @@ void setup() {
 void loop()
 {
   if(!chosen){
-    Serial.println("not chosen");
+//    Serial.println("not chosen");
     lights.off();
     time_wait = millis();
     timeout = false;
     while(!radio.available() && !timeout){        //might not need timeout checker
       if(millis() - time_wait > 250){
         timeout = true;
-        Serial.println("timeout");
+//        Serial.println("timeout");
       }
     }
 
@@ -85,10 +85,10 @@ void loop()
   if(chosen){
     lights.red();
 
-    Serial.println("Chosen");
+//    Serial.println("Chosen");
 
     if(goalStatus){
-      Serial.println("goal");
+//      Serial.println("goal");
       goal = true;
       radio.stopListening();
       radio.openWritingPipe(n_pipes[goalNumber-1]);

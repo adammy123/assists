@@ -8,7 +8,7 @@
 
 
 ////////////
-int numBalls = 5;
+int numBalls = 15;
 const int numGoals = 2;
 int interval = 3000;
 ////////////
@@ -42,6 +42,8 @@ bool sensing;
 bool chosen = true;
 bool notChosen = false;
 
+unsigned long goalTime;
+
 void setup() {
   Serial.begin(115200);
 
@@ -53,6 +55,9 @@ void setup() {
   radio.openReadingPipe(1, n_pipes[0]);
   radio.openReadingPipe(2, n_pipes[1]);
   radio.startListening();
+
+  
+//  randomSeed(analogRead(0));
 
   delay(1000);
 
@@ -77,59 +82,37 @@ void loop()
 
  
     while (sensing){
-      Serial.println("sensing");
+
       goalStatus = false;
 
       radio.openWritingPipe(b_pipes[liveGoal]);
       radio.stopListening();
-      while( !radio.write( &sensing, sizeof(sensing) )){
-//        Serial.println("choice send");
-      }
-//      Serial.println("Sent");
+      radio.write( &sensing, sizeof(sensing) );
       radio.startListening();
 
       while(!radio.available()){
-
-//        Serial.print("waiting");
-//        Serial.println(liveGoal);
-//        if(millis() - time_waiting > interval){
-//          timeout = true;
-//          sensing = false;
-//        }
       }
 
-      while(radio.available()){
-        radio.read( &goalStatus, sizeof(goalStatus) );
-//        Serial.println("read");
-      }
-       
-      if(goalStatus){
-        Serial.println("HIT");
-        timeTaken += timeElapsed;
-        numHits += 1;
-      }else{
-       numMisses += 1;
-       Serial.println("MISS (time)");
-      }
+        radio.read( &goalTime, sizeof(goalTime) );
+        Serial.println(goalTime);
+        sensing = false;
 
-      sensing = false;
+        delay(10);
     }
 
-    
-      
-
-//      radio.openWritingPipe(b_pipes[liveGoal]);
-//      radio.stopListening();
-//      radio.write( &sensing, sizeof(sensing) );
-//      radio.startListening();
-//      timeout = false;
+      radio.openWritingPipe(b_pipes[liveGoal]);
+      radio.stopListening();
+      radio.write( &sensing, sizeof(sensing) );
+      radio.startListening();
+      timeout = false;
 
       delay(10);
+    }
   
-  }
   printStats();
   delay(3000); 
 }
+
 
 void chooseGoal(int _numGoals)
 {
