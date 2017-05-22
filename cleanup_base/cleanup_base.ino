@@ -31,7 +31,7 @@ int timeTaken;
 int count = 0;
 
 bool timeout;
-unsigned long time_waiting;
+unsigned long start_wait;
 
 //bool hit[numGoals];
 //bool timeExpire[numGoals];
@@ -90,11 +90,15 @@ void loop()
       radio.write( &sensing, sizeof(sensing) );
       radio.startListening();
 
-      while(!radio.available()){
+      start_wait = millis();
+      timeout = false;
+      while(!radio.available() && !timeout){
+        if(millis() - start_wait > 3500)
+        {
+          timeout = true;
+        }
       }
-
         radio.read( &goalTime, sizeof(goalTime) );
-        Serial.println(goalTime);
         sensing = false;
 
         delay(10);
@@ -104,9 +108,16 @@ void loop()
       radio.stopListening();
       radio.write( &sensing, sizeof(sensing) );
       radio.startListening();
-      timeout = false;
 
       delay(10);
+
+      if(timeout){
+        Serial.println("No Communication");
+      }else{
+        Serial.println(goalTime);
+      }
+
+      timeout = false;
     }
   
   printStats();
