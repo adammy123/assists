@@ -4,10 +4,6 @@
 #include "RF24.h"
 #include <Wire.h>
 
-#define redLEDPin 5
-#define greenLEDPin 6
-
-
 ////////////////////////
 // System Definitions //
 ////////////////////////
@@ -42,20 +38,6 @@ bool start = false;
 bool goalStatus = false;
 bool sensing;
 
-///////////////////////
-// Stats Definitions //
-///////////////////////
-int numHits;
-int numMisses;
-int timeTaken;
-
-/////////////////////////
-// Are we using this?? //
-/////////////////////////
-//bool timeExpire[numGoals];
-//bool wrongGoal[numGoals];
-bool chosen = true;
-bool notChosen = false;
 
 void setup() {
   Serial.begin(115200);
@@ -126,7 +108,6 @@ void loop()
         }
       }
 
-      
       radio.read( &goalTime, sizeof(goalTime));
       sensing = false;
 
@@ -158,7 +139,6 @@ void loop()
     timeout = false;
   }
   
-  printStats(); //don't need this anymore
   start = false;
   delay(1000); 
 }
@@ -167,23 +147,6 @@ void loop()
 void chooseGoal(int _numGoals){
   liveGoal = random(_numGoals);
   sensing = true;
-}
-
-
-void printStats(){
-  Serial.println("\n-----Drill Stats-----");
-  
-  Serial.print("Hits: ");
-  Serial.println(numHits);
-  
-  Serial.print("Misses: ");
-  Serial.println(numMisses);
-  
-  Serial.print("Average time for completed passes: ");
-  Serial.print((float)timeTaken/numHits/1000);
-  Serial.println(" seconds");
-
-  Serial.println();
 }
 
 void resetStats(){
