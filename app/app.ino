@@ -221,7 +221,7 @@ void loop()
 
   // session page
   else if (req.indexOf("/session") > 0) {
-    Wire.beginTransmission(7);
+    Wire.beginTransmission(9);
     Wire.write(1);
     Wire.endTransmission();
     _reset = false;

@@ -63,8 +63,7 @@ void setup() {
   lights.off();
 }
 
-void loop()
-{
+void loop(){
   if(!chosen){
 //    Serial.println("not chosen");
     lights.off();
@@ -85,7 +84,7 @@ void loop()
   }
     
 
-if(chosen){
+  if(chosen){
     start_wait = millis();
     goalTime = 0;
     lights.red();
@@ -98,44 +97,27 @@ if(chosen){
     
       radio.stopListening();
       radio.openWritingPipe(n_pipes[goalNumber-1]);
-      while( !radio.write( &goalTime, sizeof(goalTime) ))
-      {
+      while( !radio.write( &goalTime, sizeof(goalTime) )){
           //makes sure that it gets sent
       }
+      
       signalLights = true;
       radio.startListening();
 //      goalStatus = false;
-     }
+   }
 
      
-      while(!radio.available()){
-        //
-      }
+  while(!radio.available()){}
  
-      radio.read( &chosen, sizeof(chosen) );
+  radio.read( &chosen, sizeof(chosen) );
 
-      if(signalLights){
-        if(goalStatus){
-          lights.green();
-          delay(2000);
-          lights.off();
-        }else{
-          lights.red();
-          delay(500);
-          lights.off();
-          delay(500);
-          lights.red();
-          delay(500);
-          lights.off();
-          delay(500);
-          lights.red();
-          delay(500);
-        }
-      }
+  if(signalLights){
+    if(goalStatus){flashHit();}
+    else{flashMiss();}
+  }
 
-      goalStatus = false;
-      signalLights = false;
-      
+  goalStatus = false;
+  signalLights = false;    
 }
 
 void goalState(){        //probably best to create goal objects
@@ -143,3 +125,19 @@ void goalState(){        //probably best to create goal objects
     goalStatus = true;
   }
 }
+
+void flashHit(){
+  lights.green();
+  delay(2000);
+  lights.off();
+}
+
+void flashMiss(){
+  for(int i=0; i<3; i++){
+    lights.red();
+    delay(500);
+    lights.off();
+    delay(500);
+  }
+}
+

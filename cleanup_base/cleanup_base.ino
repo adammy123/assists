@@ -2,51 +2,65 @@
 #include <elapsedMillis.h>
 #include <SPI.h>
 #include "RF24.h"
+#include <Wire.h>
 
 #define redLEDPin 5
 #define greenLEDPin 6
 
 
-////////////
-int numBalls = 15;
-const int numGoals = 2;
-int interval = 3000;
-////////////
+////////////////////////
+// System Definitions //
+////////////////////////
+int numBalls = 15;          //total number of balls
+const int numGoals = 2;     //total number of targets
+const int interval = 3000;  //max time to hit target
 
+///////////////////////
+// Radio Definitions //
+///////////////////////
 RF24 radio(7,8);
-
 const uint64_t b_pipes[6] = {0x0F0F0F0F11LL, 0x0F0F0F0F22LL};  
 const uint64_t n_pipes[6] = {0x1F1F1F1F11LL, 0x1F1F1F1F22LL};
+const int max_wait = 3500;  //max time to wait for radio comm
 
-//LightControl lights(redLEDPin, greenLEDPin);
+//////////////////////
+// Data Definitions //
+/////////////////////
+int sessionNumber = 0;
+int hit[numGoals] = {0};
+int target[numGoals] = {0};
+unsigned long timeTaken[numGoals] = {0.0};
 
-
-elapsedMillis timeElapsed;
+//////////////////////
+// Temp Definitions //
+/////////////////////
 int liveGoal;
+unsigned long start_wait;
+unsigned long goalTime;
+bool timeout;
+bool start = false;
+bool goalStatus = false;
+bool sensing;
 
+///////////////////////
+// Stats Definitions //
+///////////////////////
 int numHits;
 int numMisses;
 int timeTaken;
 
-int count = 0;
-
-bool timeout;
-unsigned long start_wait;
-
-//bool hit[numGoals];
+/////////////////////////
+// Are we using this?? //
+/////////////////////////
 //bool timeExpire[numGoals];
 //bool wrongGoal[numGoals];
-bool goalStatus = false;
-bool sensing;
-
 bool chosen = true;
 bool notChosen = false;
-
-unsigned long goalTime;
 
 void setup() {
   Serial.begin(115200);
 
+  // initialize radio comm with target nodes
   radio.begin();
   radio.setChannel(108);
 
@@ -59,77 +73,102 @@ void setup() {
   
 //  randomSeed(analogRead(0));
 
+  // setup for wire comm. to esp8266
+  Wire.begin(9);
+  Wire.onReceive(receiveEvent);
+  Wire.onRequest(requestEvent);
+  
   delay(1000);
 
 }
 
 void loop()
 {
-  //reset stats
-  numHits = 0;
-  numMisses = 0;
-  timeTaken = 0;
+
+  while(!start){//wait for cue from app
+  }
+
+  resetStats();
+  
   Serial.println("Begin Base");
 
   //run the drill
-  for(int i=1; i<=numBalls; i++){
+  for(int i=0; i<numBalls; i++){
     delay(2500);
     chooseGoal(numGoals);
     Serial.print("Chosen Goal ");
     Serial.print(liveGoal+1);
     Serial.print(": ");
-    timeElapsed = 0;
 
- 
+    // store data for target chosen
+    target[i] = liveGoal+1;
+
     while (sensing){
 
       goalStatus = false;
 
+      //inform chosen node to start listening
       radio.openWritingPipe(b_pipes[liveGoal]);
       radio.stopListening();
-      radio.write( &sensing, sizeof(sensing) );
+      radio.write(&sensing, sizeof(sensing));
       radio.startListening();
 
+      //start timeout timer
       start_wait = millis();
       timeout = false;
+
+      //if no reply from node and not yet timout
       while(!radio.available() && !timeout){
-        if(millis() - start_wait > 3500)
-        {
+        
+        //check for timeout
+        if(millis() - start_wait > max_wait){
           timeout = true;
         }
       }
-        radio.read( &goalTime, sizeof(goalTime) );
-        sensing = false;
 
-        delay(10);
-    }
-
-      radio.openWritingPipe(b_pipes[liveGoal]);
-      radio.stopListening();
-      radio.write( &sensing, sizeof(sensing) );
-      radio.startListening();
+      
+      radio.read( &goalTime, sizeof(goalTime));
+      sensing = false;
 
       delay(10);
-
-      if(timeout){
-        Serial.println("No Communication");
-      }else{
-        Serial.println(goalTime);
-      }
-
-      timeout = false;
     }
+
+    //inform chosen node to stop listening
+    radio.openWritingPipe(b_pipes[liveGoal]);
+    radio.stopListening();
+    radio.write( &sensing, sizeof(sensing) );
+    radio.startListening();
+
+    delay(10);
+
+    if(timeout){
+      Serial.println("No Communication");
+    }
+    
+    else{
+      Serial.println(goalTime);
+      timeTaken[i] = goalTime;
+
+      //if time taken is less then interval, record as hit
+      if(goalTime <= interval){hit[i] = 1;}
+      //else record as miss
+      else{hit[i]=0;}
+    }
+
+    timeout = false;
+  }
   
-  printStats();
-  delay(3000); 
+  printStats(); //don't need this anymore
+  start = false;
+  delay(1000); 
 }
 
 
-void chooseGoal(int _numGoals)
-{
+void chooseGoal(int _numGoals){
   liveGoal = random(_numGoals);
   sensing = true;
 }
+
 
 void printStats(){
   Serial.println("\n-----Drill Stats-----");
@@ -146,3 +185,37 @@ void printStats(){
 
   Serial.println();
 }
+
+void resetStats(){
+  numHits = 0;
+  numMisses = 0;
+  timeTaken = 0;
+  hit[numGoals] = {0};
+  target[numGoals] = {0};
+  timeTaken[numGoals] = {0.0};
+}
+
+// function called when receive wire event from esp8266
+void receiveEvent(byte command){
+  if (command = 1){
+    // begin session
+    start = true;
+  }
+}
+
+// function called when receive a request event from esp8266
+void requestEvent(){
+  sessionNumber += 1;
+  Wire.write(sessionNumber);
+  
+  for(int i=0; i<numBalls; i++){
+    Wire.write(target[i]);
+  }
+  for(int i=0; i<numBalls; i++){
+    Wire.write(hit[i]);
+  }
+  for(int i=0; i<numBalls; i++){
+    Wire.write(int(timeTaken[i]);
+  }
+}
+
