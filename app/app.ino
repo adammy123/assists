@@ -12,7 +12,7 @@ WiFiServer server(80);
 ////////////////////////
 // System Definitions //
 ////////////////////////
-int sessionNumber;
+int sessionNumber = 0;
 const int totalBalls = 2;
 const int intervalTime = 3;   //seconds
 const float goTime = 0.5;     //seconds
@@ -167,7 +167,8 @@ String results(String html_string){
 }
 
 void requestResults(){
-  Wire.requestFrom(7, 3*totalBalls);
+  Wire.requestFrom(7, 3*totalBalls + 1);
+  sessionNumber = Wire.read();
   for(int k=0; k<totalBalls; k++){
     target[k] = Wire.read();
   }
@@ -185,7 +186,6 @@ void resetStats(){
   timeTaken[totalBalls] = {0};
   totalScore = 0;
   totalTimeTaken = 0;
-  sessionNumber = sessionNumber + 1;
   _reset = true;
 }
 
@@ -194,7 +194,6 @@ void setup(){
   Wire.begin(8);
   setupWiFi();
   server.begin();
-  sessionNumber = 0;
 }
 
 void loop() 
@@ -210,7 +209,7 @@ void loop()
   client.flush();
 
   // reset html_string
-  html_string = "HTTP/1.1 200 OK\r\n";
+  html_string  = "HTTP/1.1 200 OK\r\n";
   html_string += "Content-Type: text/html\r\n\r\n";
   html_string += "<!DOCTYPE HTML>\r\n<html>\r\n";
 

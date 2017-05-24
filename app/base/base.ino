@@ -2,9 +2,9 @@
 const int totalBalls = 2;
 int target[totalBalls] = {0};
 int hit[totalBalls] = {0};
-long timeTaken[totalBalls] = {0.0};
+unsigned long timeTaken[totalBalls] = {0.0};
 bool state = false;
-int test = 0;
+int sessionNumber = 0;
 int temp;
 
 void setup() {
@@ -40,7 +40,9 @@ void receiveEvent(byte command){
 }
 
 void requestEvent(){
-  test += 1;
+  sessionNumber += 1;
+  Wire.write(sessionNumber);
+  
   for(int i=0; i<totalBalls; i++){
     Wire.write(target[i]);
   }
@@ -48,7 +50,7 @@ void requestEvent(){
     Wire.write(hit[i]);
   }
   for(int i=0; i<totalBalls; i++){
-    temp = int(timeTaken[i])+test;
+    temp = int(timeTaken[i])+sessionNumber;
     Wire.write(temp);
   }
 }
