@@ -1,8 +1,8 @@
 #include <Wire.h>
-const int totalBalls = 2;
-int target[totalBalls] = {0};
-int hit[totalBalls] = {0};
-unsigned long timeTaken[totalBalls] = {0.0};
+const int totalBalls = 5;
+int target[totalBalls];
+int hit[totalBalls];
+unsigned long timeTaken[totalBalls];
 bool state = false;
 int sessionNumber = 0;
 int temp;
@@ -28,12 +28,12 @@ void loop() {
 }
 
 void receiveEvent(byte command){
-  if (command = 1){
+  if (command == 1){
     // begin session
     for (int i = 0; i < totalBalls; i++){
       target[i] = i;
       hit[i] = 1;
-      timeTaken[i] = long(i) * 100.0;
+      timeTaken[i] = 200;
     }
     state = true;
   }

@@ -7,7 +7,7 @@
 ////////////////////////
 // System Definitions //
 ////////////////////////
-int numBalls = 15;          //total number of balls
+const int numBalls = 5;          //total number of balls
 const int numGoals = 2;     //total number of targets
 const int interval = 3000;  //max time to hit target
 
@@ -22,10 +22,11 @@ const int max_wait = 3500;  //max time to wait for radio comm
 //////////////////////
 // Data Definitions //
 /////////////////////
-int sessionNumber = 0;
-int hit[numGoals] = {0};
-int target[numGoals] = {0};
-unsigned long timeTaken[numGoals] = {0.0};
+byte sessionNumber;
+byte hit[numBalls];
+byte target[numBalls];
+byte timeTakenByte[2];
+unsigned long timeTaken[numBalls];
 
 //////////////////////
 // Temp Definitions //
@@ -40,7 +41,7 @@ bool sensing;
 
 
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(9600);
 
   // initialize radio comm with target nodes
   radio.begin();
@@ -56,34 +57,35 @@ void setup() {
 //  randomSeed(analogRead(0));
 
   // setup for wire comm. to esp8266
-  Wire.begin(9);
+  Wire.begin(7);
   Wire.onReceive(receiveEvent);
   Wire.onRequest(requestEvent);
-  
-  delay(1000);
+  delay(100);
 
 }
 
 void loop()
 {
 
-  while(!start){//wait for cue from app
-  }
-
-  resetStats();
   
+  Serial.println("waiting for app");
+  while(!start){//wait for cue from app
+    delay(100);
+  }
+  
+
   Serial.println("Begin Base");
 
   //run the drill
   for(int i=0; i<numBalls; i++){
-    delay(2500);
+    for(int j = 3; j>0; j--){
+      Serial.println(j);
+      delay(1000);
+    }
     chooseGoal(numGoals);
     Serial.print("Chosen Goal ");
     Serial.print(liveGoal+1);
     Serial.print(": ");
-
-    // store data for target chosen
-    target[i] = liveGoal+1;
 
     while (sensing){
 
@@ -128,19 +130,20 @@ void loop()
     
     else{
       Serial.println(goalTime);
-      timeTaken[i] = goalTime;
+      timeTaken[i] = (int)goalTime;
 
       //if time taken is less then interval, record as hit
-      if(goalTime <= interval){hit[i] = 1;}
+      if(goalTime < interval){hit[i] = 1;}
       //else record as miss
       else{hit[i]=0;}
     }
-
+    target[i] = liveGoal+1;
     timeout = false;
   }
   
   start = false;
-  delay(1000); 
+  delay(3000); 
+  
 }
 
 
@@ -149,18 +152,10 @@ void chooseGoal(int _numGoals){
   sensing = true;
 }
 
-void resetStats(){
-  numHits = 0;
-  numMisses = 0;
-  timeTaken = 0;
-  hit[numGoals] = {0};
-  target[numGoals] = {0};
-  timeTaken[numGoals] = {0.0};
-}
 
 // function called when receive wire event from esp8266
 void receiveEvent(byte command){
-  if (command = 1){
+  if (command > 0){
     // begin session
     start = true;
   }
@@ -171,14 +166,19 @@ void requestEvent(){
   sessionNumber += 1;
   Wire.write(sessionNumber);
   
-  for(int i=0; i<numBalls; i++){
-    Wire.write(target[i]);
+  for(int j=0; j<numBalls; j++){
+    Wire.write(target[j]);
   }
-  for(int i=0; i<numBalls; i++){
-    Wire.write(hit[i]);
+  for(int j=0; j<numBalls; j++){
+    Wire.write(hit[j]);
   }
-  for(int i=0; i<numBalls; i++){
-    Wire.write(int(timeTaken[i]);
+  for(int j=0; j<numBalls; j++){
+    timeTakenByte[0] = (timeTaken[j] >> 8) & 0xFF;
+    timeTakenByte[1] = timeTaken[j] & 0xFF;
+    Wire.write(timeTakenByte, 2);
+  }
+  while(Wire.available()){
+    byte dump = Wire.read();
   }
 }
 

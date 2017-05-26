@@ -5,22 +5,24 @@
 //////////////////////
 // WiFi Definitions //
 //////////////////////
-String AP_NameString = "Soccer Controls"; //Wifi name
+const String AP_NameString = "Soccer Controls"; //Wifi name
 const char WiFiAPPSK[] = "soccerskilz";   //Password
 WiFiServer server(80);
 
 ////////////////////////
 // System Definitions //
 ////////////////////////
-int sessionNumber = 0;
-const int totalBalls = 2;
+const int totalBalls = 5;
 const int intervalTime = 3;   //seconds
 const float goTime = 0.5;     //seconds
 
 // Arrays to hold session results
-int target[totalBalls] = {0};
-int hit[totalBalls] = {0};
+byte sessionNumber = 0;
+byte target[totalBalls] = {0};
+byte hit[totalBalls] = {0};
 int timeTaken[totalBalls] = {0};
+byte temp1;
+byte temp2;
 
 // Overall results
 int totalScore = 0;
@@ -29,6 +31,7 @@ int totalTimeTaken = 0;
 // HTML request file to send to server
 String html_string;
 bool _reset = false;
+bool _start = false;
 
 void setupWiFi(){
   WiFi.mode(WIFI_AP);
@@ -54,7 +57,7 @@ String home_(String html_string){
   html_string += "&nbsp;3. xxx<br><br>Press start when ready!</p>\r\n";
 
   // Button to redirect to the session page
-  html_string += "<button type=\"button\" onclick=\"location.href = '/session';\">Start</button>\r\n";
+  html_string += "<button type=\"button\" onclick=\"location.href = '/session" + String(sessionNumber+1) + "';\">Start</button>\r\n";
   html_string +=  "</body>\r\n</html>\n";
   
   return html_string;
@@ -130,6 +133,7 @@ String results(String html_string){
   html_string += "<div id=\"session\">Session: " + String(sessionNumber) + "</div>\r\n";
   html_string += "<div id=\"date\"></div>\r\n";
   html_string += "<div id=\"time\"></div>\r\n";
+  
   html_string += "<div id=\"score\">Score: ";
   for(int i = 0; i < totalBalls; i++){
     if(hit[i] == 1){
@@ -137,11 +141,12 @@ String results(String html_string){
     }
   }
   html_string += String(totalScore) + "</div>\r\n";
+  
   html_string += "<div id=\"timeTaken\">Time Taken: ";
   for(int i = 0; i < totalBalls; i++){
     totalTimeTaken += timeTaken[i]; 
   }
-  html_string += String(totalTimeTaken) + "</div>\r\n";
+  html_string += String((float)totalTimeTaken/1000.0) + "s</div>\r\n";
 
   // Draw table for statistics on individual targets
   html_string += "<table>\r\n";
@@ -155,7 +160,7 @@ String results(String html_string){
     else{                                                               //MISS
       html_string += "<td>MISS</td>";
     }
-    html_string += "<td>" + String(timeTaken[i-1]) + "</td></tr>\r\n";  //Time taken
+    html_string += "<td>" + String((float)timeTaken[i-1]/1000.0) + "</td></tr>\r\n";  //Time taken
   }
   html_string += "</table><br>\r\n";
 
@@ -167,8 +172,10 @@ String results(String html_string){
 }
 
 void requestResults(){
-  Wire.requestFrom(7, 3*totalBalls + 1);
+  Wire.requestFrom(7, 4*totalBalls + 1);
+
   sessionNumber = Wire.read();
+  
   for(int k=0; k<totalBalls; k++){
     target[k] = Wire.read();
   }
@@ -176,26 +183,40 @@ void requestResults(){
     hit[k] = Wire.read();
   }
   for(int k=0; k<totalBalls; k++){
-    timeTaken[k] = Wire.read();
-  }  
+    temp1 = Wire.read();
+    temp2 = Wire.read();
+    timeTaken[k] = temp1;
+    timeTaken[k] = (timeTaken[k] << 8)|temp2; 
+  }
+  while(Wire.available()){
+    byte dump = Wire.read();
+  }
 }
 
 void resetStats(){
-  target[totalBalls] = {0};
-  hit[totalBalls] = {0};
-  timeTaken[totalBalls] = {0};
   totalScore = 0;
   totalTimeTaken = 0;
   _reset = true;
 }
 
+
+
+
+
+
+
+
+// ----------Setup-------------//
+
 void setup(){
   Serial.begin(115200);
-  Wire.begin(8);
+  Wire.begin();
   setupWiFi();
   server.begin();
 }
 
+
+// ----------Loop-------------//
 void loop() 
 {
   // Check if a client has connected
@@ -217,14 +238,20 @@ void loop()
   if (req.indexOf("/results") > 0) {
     requestResults();
     html_string = results(html_string);
+    _start = false;
   }
 
   // session page
   else if (req.indexOf("/session") > 0) {
-    Wire.beginTransmission(9);
-    Wire.write(1);
-    Wire.endTransmission();
-    _reset = false;
+    if(!_start){
+      Wire.beginTransmission(7);
+      byte command = 1;
+      Wire.write(command);
+      command += 1;
+      Wire.endTransmission();
+      _start = true;
+      _reset = false;
+    }
     html_string = session(html_string);
   }
 
