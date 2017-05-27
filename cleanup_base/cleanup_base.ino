@@ -7,9 +7,10 @@
 ////////////////////////
 // System Definitions //
 ////////////////////////
-const int numBalls = 5;          //total number of balls
+const int numBalls = 10;     //total number of balls
 const int numGoals = 2;     //total number of targets
 const int interval = 3000;  //max time to hit target
+const unsigned long ballFeedRate = 3500;
 
 ///////////////////////
 // Radio Definitions //
@@ -27,10 +28,11 @@ byte hit[numBalls];
 byte target[numBalls];
 byte timeTakenByte[2];
 unsigned long timeTaken[numBalls];
+bool dataToSend = true;
 
 //////////////////////
 // Temp Definitions //
-/////////////////////
+//////////////////////
 int liveGoal;
 unsigned long start_wait;
 unsigned long goalTime;
@@ -49,8 +51,10 @@ void setup() {
 
   radio.setPALevel(RF24_PA_MIN);
 
-  radio.openReadingPipe(1, n_pipes[0]);
-  radio.openReadingPipe(2, n_pipes[1]);
+  for(int i=0; i<numGoals; i++){
+    radio.openReadingPipe((i+1), n_pipes[i]);
+  }
+  
   radio.startListening();
 
   
@@ -66,8 +70,6 @@ void setup() {
 
 void loop()
 {
-
-  
   Serial.println("waiting for app");
   while(!start){//wait for cue from app
     delay(100);
@@ -77,12 +79,12 @@ void loop()
   Serial.println("Begin Base");
 
   //run the drill
+  goalTime = 0;
   for(int i=0; i<numBalls; i++){
-    for(int j = 3; j>0; j--){
-      Serial.println(j);
-      delay(1000);
-    }
-    chooseGoal(numGoals);
+    
+    delay(abs(ballFeedRate - goalTime));
+    
+    liveGoal = chooseGoal(numGoals);
     Serial.print("Chosen Goal ");
     Serial.print(liveGoal+1);
     Serial.print(": ");
@@ -142,14 +144,14 @@ void loop()
   }
   
   start = false;
-  delay(3000); 
+  delay(1000); 
   
 }
 
 
-void chooseGoal(int _numGoals){
-  liveGoal = random(_numGoals);
+int chooseGoal(int _numGoals){
   sensing = true;
+  return random(_numGoals);
 }
 
 
@@ -163,22 +165,30 @@ void receiveEvent(byte command){
 
 // function called when receive a request event from esp8266
 void requestEvent(){
-  sessionNumber += 1;
-  Wire.write(sessionNumber);
+  if(dataToSend){
+    sessionNumber += 1;
+    Wire.write(sessionNumber);
+    
+    for(int j=0; j<numBalls; j++){
+      Wire.write(target[j]);
+    }
+    for(int j=0; j<numBalls; j++){
+      Wire.write(hit[j]);
+    }
+  }
+
+  else{
+    for(int j=0; j<numBalls; j++){
+      timeTakenByte[0] = (timeTaken[j] >> 8) & 0xFF;
+      timeTakenByte[1] = timeTaken[j] & 0xFF;
+      Wire.write(timeTakenByte, 2);
+    }
+  }
+
+  dataToSend = !dataToSend;
   
-  for(int j=0; j<numBalls; j++){
-    Wire.write(target[j]);
-  }
-  for(int j=0; j<numBalls; j++){
-    Wire.write(hit[j]);
-  }
-  for(int j=0; j<numBalls; j++){
-    timeTakenByte[0] = (timeTaken[j] >> 8) & 0xFF;
-    timeTakenByte[1] = timeTaken[j] & 0xFF;
-    Wire.write(timeTakenByte, 2);
-  }
   while(Wire.available()){
-    byte dump = Wire.read();
-  }
+      byte dump = Wire.read();
+    }
 }
 

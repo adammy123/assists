@@ -1,9 +1,7 @@
 #define irLEDPin 9
 #define irSensorPin 2
-
 #define redLEDPin 5
 #define greenLEDPin 6
-
 
 #include "TimerOne.h"
 #include "LightControl.h"
@@ -11,31 +9,32 @@
 #include <SPI.h>
 #include "RF24.h"
 
+////////////////////////
+// System Definitions //
+////////////////////////
+const int goalNumber = 2;
+const int interval = 3000;
+
+///////////////////////
+// Radio Definitions //
+///////////////////////
 RF24 radio(7,8);
-
-int goalNumber = 2;
-
 const uint64_t b_pipes[6] = {0x0F0F0F0F11LL, 0x0F0F0F0F22LL};  
 const uint64_t n_pipes[6] = {0x1F1F1F1F11LL, 0x1F1F1F1F22LL};
 
-LightControl lights(redLEDPin, greenLEDPin);
-
+//////////////////////
+// Temp Definitions //
+//////////////////////
 bool goalStatus = false;
 bool chosen = false;
-bool goal = false;
 bool signalLights = false;
-
-unsigned long time_waiting;
 unsigned long start_wait;
 unsigned long goalTime;
 
-unsigned long time_wait;
-bool timeout;
-int liveGoal;
-
-int count;
-int interval = 3000;
-
+//////////////////////////
+// Lighting Definitions //
+//////////////////////////
+LightControl lights(redLEDPin, greenLEDPin);
 
 void setup() {
   pinMode(irLEDPin, OUTPUT);
@@ -65,48 +64,31 @@ void setup() {
 
 void loop(){
   if(!chosen){
-//    Serial.println("not chosen");
     lights.off();
-//    time_wait = millis();
-//    timeout = false;
-    while(!radio.available()){        //might not need timeout checker
-//      if(millis() - time_wait > 250){
-//        timeout = true;
-//        Serial.println("timeout");
-//      }
-    }
-
-//    if(!timeout){
-//      while(radio.available()){
-        radio.read( &chosen, sizeof(chosen) );
-//      }
-//    }
+    while(!radio.available()){delay(10);}
+    radio.read( &chosen, sizeof(chosen) );
   }
-    
 
+  
   if(chosen){
     start_wait = millis();
     goalTime = 0;
     lights.red();
 
-    while(!goalStatus && (millis() - start_wait < interval)){
-      //
-    }
+    while(!goalStatus && (millis() - start_wait < interval)){delay(10);}
     goalTime = millis() - start_wait;
-
     
-      radio.stopListening();
-      radio.openWritingPipe(n_pipes[goalNumber-1]);
-      while( !radio.write( &goalTime, sizeof(goalTime) )){
-          //makes sure that it gets sent
-      }
+    radio.stopListening();
+    radio.openWritingPipe(n_pipes[goalNumber-1]);
+    
+    while( !radio.write( &goalTime, sizeof(goalTime) )){} //makes sure that it gets sent
       
-      signalLights = true;
-      radio.startListening();
-//      goalStatus = false;
-   }
+    signalLights = true;
+    radio.startListening();
 
-     
+  }
+
+   
   while(!radio.available()){}
  
   radio.read( &chosen, sizeof(chosen) );
@@ -128,16 +110,18 @@ void goalState(){        //probably best to create goal objects
 
 void flashHit(){
   lights.green();
-  delay(2000);
+  delay(500);
   lights.off();
 }
 
 void flashMiss(){
-  for(int i=0; i<3; i++){
-    lights.red();
-    delay(500);
-    lights.off();
-    delay(500);
-  }
+//  for(int i=0; i<2; i++){
+//    lights.red();
+//    delay(500);
+//    lights.off();
+//    delay(500);
+//  }
+  lights.off();
+  delay(500);
 }
 

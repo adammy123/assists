@@ -12,9 +12,9 @@ WiFiServer server(80);
 ////////////////////////
 // System Definitions //
 ////////////////////////
-const int totalBalls = 5;
-const int intervalTime = 3;   //seconds
-const float goTime = 0.5;     //seconds
+const int totalBalls = 10;
+const int ballFeedRate = 3;   //seconds (excluding goTime)
+const float goTime = 0.5;     //seconds (time GO! flashed on screen)
 
 // Arrays to hold session results
 byte sessionNumber = 0;
@@ -71,19 +71,19 @@ String session(String html_string){
   html_string += "<script>\r\n";
   html_string += "var totalBalls=" + String(totalBalls) + ";\r\n";
   html_string += "var currentBall=1;\r\n";
-  html_string += "var intervalTime = " + String(intervalTime) + ";\r\n";
+  html_string += "var ballFeedRate = " + String(ballFeedRate) + ";\r\n";
   html_string += "var goTime = " + String(goTime) + ";\r\n";
   
   html_string += "function add(){\r\n";
-  html_string += "  intervalTime -= 0.1;\r\n";
-  html_string += "  if(intervalTime < -0.1){\r\n";
+  html_string += "  ballFeedRate -= 0.1;\r\n";
+  html_string += "  if(ballFeedRate < -0.1){\r\n";
   html_string += "    document.getElementById('time').style.display = 'none';\r\n";
   html_string += "    document.getElementById('go').style.display = 'block';}\r\n";
   html_string += "  else{\r\n";
   html_string += "    document.getElementById('go').style.display = 'none';\r\n";
-  html_string += "    document.getElementById('time').innerHTML = intervalTime.toFixed(1);} \r\n";
-  html_string += "  if(intervalTime < -goTime){\r\n";
-  html_string += "    intervalTime = 3; currentBall +=1;\r\n";
+  html_string += "    document.getElementById('time').innerHTML = ballFeedRate.toFixed(1);} \r\n";
+  html_string += "  if(ballFeedRate < -goTime){\r\n";
+  html_string += "    ballFeedRate = 3; currentBall +=1;\r\n";
   html_string += "    if (currentBall > totalBalls){\r\n";
   html_string += "      document.getElementById('button').style.display ='block';\r\n";
   html_string += "      clearTimeout(t);}\r\n";
@@ -140,7 +140,7 @@ String results(String html_string){
       totalScore += 1; 
     }
   }
-  html_string += String(totalScore) + "</div>\r\n";
+  html_string += String(totalScore) + "/" + String(totalBalls) + "</div>\r\n";
   
   html_string += "<div id=\"timeTaken\">Time Taken: ";
   for(int i = 0; i < totalBalls; i++){
@@ -160,7 +160,7 @@ String results(String html_string){
     else{                                                               //MISS
       html_string += "<td>MISS</td>";
     }
-    html_string += "<td>" + String((float)timeTaken[i-1]/1000.0) + "</td></tr>\r\n";  //Time taken
+    html_string += "<td>" + String((float)timeTaken[i-1]/1000.0) + "s</td></tr>\r\n";  //Time taken
   }
   html_string += "</table><br>\r\n";
 
@@ -172,8 +172,7 @@ String results(String html_string){
 }
 
 void requestResults(){
-  Wire.requestFrom(7, 4*totalBalls + 1);
-
+  Wire.requestFrom(7, 2*totalBalls + 1);
   sessionNumber = Wire.read();
   
   for(int k=0; k<totalBalls; k++){
@@ -182,6 +181,12 @@ void requestResults(){
   for(int k=0; k<totalBalls; k++){
     hit[k] = Wire.read();
   }
+  while(Wire.available()){
+    byte dump = Wire.read();
+  }
+
+  Wire.requestFrom(7, 2*totalBalls);
+  
   for(int k=0; k<totalBalls; k++){
     temp1 = Wire.read();
     temp2 = Wire.read();
