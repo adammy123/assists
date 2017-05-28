@@ -172,6 +172,8 @@ String results(String html_string){
 }
 
 void requestResults(){
+  // because I2C buffer only hold 32 bytes, we request the data in two parts
+  // request first half of data
   Wire.requestFrom(7, 2*totalBalls + 1);
   sessionNumber = Wire.read();
   
@@ -185,6 +187,7 @@ void requestResults(){
     byte dump = Wire.read();
   }
 
+  // request second half of data
   Wire.requestFrom(7, 2*totalBalls);
   
   for(int k=0; k<totalBalls; k++){

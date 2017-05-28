@@ -58,7 +58,7 @@ void setup() {
   radio.startListening();
 
   
-//  randomSeed(analogRead(0));
+  randomSeed(analogRead(0));
 
   // setup for wire comm. to esp8266
   Wire.begin(7);
@@ -165,6 +165,8 @@ void receiveEvent(byte command){
 
 // function called when receive a request event from esp8266
 void requestEvent(){
+  // because I2C buffer only hold 32 bytes, we send the data in two parts
+  // send first half of data
   if(dataToSend){
     sessionNumber += 1;
     Wire.write(sessionNumber);
@@ -177,6 +179,7 @@ void requestEvent(){
     }
   }
 
+  // send second half of data
   else{
     for(int j=0; j<numBalls; j++){
       timeTakenByte[0] = (timeTaken[j] >> 8) & 0xFF;
