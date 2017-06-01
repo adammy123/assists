@@ -20,13 +20,8 @@ const int interval = 3000;
 ///////////////////////
 RF24 radio(7,8);
 const uint64_t b_pipes[4] = {0x0F0F0F0F11LL, 0x0F0F0F0F22LL, 0x0F0F0F0F33LL, 0x0F0F0F0F44LL};  
-<<<<<<< HEAD
-const uint64_t n_pipes[4] = {0x1F1F1F1F11LL, 0x1F1F1F1F22LL, 0x1F1F1F1F33LL, 0x0F1F1F1F44LL};
-                                                                                                                                                                                                                
-=======
 const uint64_t n_pipes[4] = {0x1F1F1F1F11LL, 0x1F1F1F1F22LL, 0x1F1F1F1F33LL, 0x1F1F1F1F44LL};
 
->>>>>>> origin/master
 //////////////////////
 // Temp Definitions //
 //////////////////////
