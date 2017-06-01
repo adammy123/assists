@@ -16,10 +16,11 @@ const unsigned long ballFeedRate = 3500;
 // Radio Definitions //
 ///////////////////////
 RF24 radio(7,8);
-const uint64_t b_pipes[6] = {0x0F0F0F0F11LL, 0x0F0F0F0F22LL, 0x0F0F0F0F33LL, 0x0F0F0F0F44LL};  
-const uint64_t n_pipes[6] = {0x1F1F1F1F11LL, 0x1F1F1F1F22LL, 0x0F0F0F0F33LL, 0x0F0F0F0F44LL};
+const uint64_t b_pipes[4] = {0x0F0F0F0F11LL, 0x0F0F0F0F22LL, 0x0F0F0F0F33LL, 0x0F0F0F0F44LL};  
+const uint64_t n_pipes[4] = {0x1F1F1F1F11LL, 0x1F1F1F1F22LL, 0x1F1F1F1F33LL, 0x1F1F1F1F44LL};
 const int max_wait = 3500;  //max time to wait for radio comm
 const bool targetResponseCheck = true;
+unsigned long targetResponseCheckDump;
 bool targetCheck[numGoals] = {false};
 
 //////////////////////
@@ -41,7 +42,7 @@ unsigned long goalTime;
 bool timeout;
 bool start = false;
 bool goalStatus = false;
-bool sensing;
+bool sensing = false;
 
 ///////////////////////
 // Error Definitions //
@@ -63,8 +64,6 @@ void setup() {
   for(int i=0; i<numGoals; i++){
     radio.openReadingPipe((i+1), n_pipes[i]);
   }
-  
-  radio.startListening();
 
   
   randomSeed(analogRead(0));
@@ -80,10 +79,17 @@ void setup() {
 void loop()
 {
 
-  Serial.println("waiting for app");
-  while(!_ready){
-    delay(100);
-  }
+  // wait for cue from app
+//  Serial.println("waiting for app");
+//  while(!ready){
+//    delay(100);
+//  }
+
+  // for debugging purposes: use Serial Moniter input
+  //                         to start session instead of app
+  Serial.println ("Hit a key to ready");
+  while(Serial.available() == 0){}
+  byte temp = Serial.read();
 
   // check reponses from targets
   for(int i=0; i<numGoals; i++){
@@ -100,16 +106,34 @@ void loop()
         timeout = true;
       }
     }
-    radio.read( &targetResponseCheck, sizeof(targetResponseCheck));
+    radio.read( &targetResponseCheckDump, sizeof(targetResponseCheckDump));
     if(!timeout){
       targetCheck[i] = true;
+      Serial.print("Target ");
+      Serial.print(i+1);
+      Serial.println(" OK!");
     }
+    else{
+      Serial.print("Target ");
+      Serial.print(i+1);
+      Serial.println(" BAD.");
+    }
+    
+    //inform chosen node to stop listening
+    radio.openWritingPipe(b_pipes[i]);
+    radio.stopListening();
+    radio.write( &sensing, sizeof(sensing) );
+
   }
   
-  Serial.println("waiting for app");
-  while(!start){//wait for cue from app
-    delay(100);
-  }
+//  Serial.println("waiting for app");
+//  while(!start){//wait for cue from app
+//    delay(100);
+//  }
+
+  Serial.println ("Hit a key to start");
+  while(Serial.available() == 0){}
+  temp = Serial.read();
   
   resetStats();
   Serial.println("Begin Base");
