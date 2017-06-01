@@ -5,8 +5,8 @@
 //////////////////////
 // WiFi Definitions //
 //////////////////////
-const String AP_NameString = "Soccer Controls"; //Wifi name
-const char WiFiAPPSK[] = "soccerskilz";   //Password
+const String AP_NameString = "Assists"; //Wifi name
+const char WiFiAPPSK[] = "design384";   //Password
 WiFiServer server(80);
 
 ////////////////////////
@@ -23,6 +23,7 @@ byte hit[totalBalls] = {0};
 int timeTaken[totalBalls] = {0};
 byte temp1;
 byte temp2;
+byte errorByte = 0;
 
 // Overall results
 int totalScore = 0;
@@ -52,9 +53,9 @@ String home_(String html_string){
   // HTML welcome message and instructions
   html_string += "<body><p>Welcome to ASSISTS.<br>Brought to you by DSGN 384.<br><br>\r\n";
   html_string += "Instructions:<br>\r\n";
-  html_string += "&nbsp;1. Set up goals 20 feet from center<br>\r\n";
+  html_string += "&nbsp;1. Set up targets 20 feet from center<br>\r\n";
   html_string += "&nbsp;2. Have teammate ready with " + String(totalBalls) + " balls<br>\r\n";
-  html_string += "&nbsp;3. xxx<br><br>Press start when ready!</p>\r\n";
+  html_string += "&nbsp;3. Press start when ready!</p>\r\n";
 
   // Button to redirect to the session page
   html_string += "<button type=\"button\" onclick=\"location.href = '/session" + String(sessionNumber+1) + "';\">Start</button>\r\n";
@@ -85,11 +86,15 @@ String session(String html_string){
   html_string += "  if(ballFeedRate < -goTime){\r\n";
   html_string += "    ballFeedRate = 3; currentBall +=1;\r\n";
   html_string += "    if (currentBall > totalBalls){\r\n";
-  html_string += "      document.getElementById('button').style.display ='block';\r\n";
+  html_string += "      setTimeout(displayResultsButton, 3000);\r\n";
   html_string += "      clearTimeout(t);}\r\n";
   html_string += "    document.getElementById('time').style.display = 'block';\r\n";
   html_string += "    document.getElementById('numBalls').innerHTML = 'Ball: ' + currentBall;}\r\n";
   html_string += "  stopwatch();\r\n";
+  html_string += "}\r\n";
+
+  html_string += "function displayResultsButton() {\r\n";
+  html_string += "  document.getElementById('button').style.display ='block';\r\n";
   html_string += "}\r\n";
   
   html_string += "function stopwatch() {\r\n";
@@ -164,6 +169,18 @@ String results(String html_string){
   }
   html_string += "</table><br>\r\n";
 
+  // Display error messages is any
+  if(errorByte > 0){
+    html_string += "<div>WARNING!\r\n";
+    if(errorByte == 100){
+      html_string += "Fatal error: More than one target offline. Please contact administrator.";
+    }
+    else{
+      html_string += "Error with target " + String(errorByte) + ": No communication.";
+    }
+    html_string += "</div>\r\n";
+  }
+
   // Button to redirect to home page
   html_string += "<button type=\"button\" onclick=\"location.href = '/';\">End</button>\r\n";
   html_string += "</body></html>\r\n";
@@ -174,8 +191,9 @@ String results(String html_string){
 void requestResults(){
   // because I2C buffer only hold 32 bytes, we request the data in two parts
   // request first half of data
-  Wire.requestFrom(7, 2*totalBalls + 1);
+  Wire.requestFrom(7, 2*totalBalls + 2);
   sessionNumber = Wire.read();
+  errorByte = Wire.read();
   
   for(int k=0; k<totalBalls; k++){
     target[k] = Wire.read();

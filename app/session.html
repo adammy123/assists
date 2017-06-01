@@ -5,8 +5,8 @@
 	
 	var totalBalls = 3;
 	var	currentBall = 1;
-
-	var intervalTime = 3;
+	var interval = 1
+	var intervalTime = 1;
 	var goTime = 0.5;
 
 	function add(){
@@ -24,10 +24,10 @@
 
 		// resets timer for next ball
 		if(intervalTime < -goTime){
-			intervalTime = 3;
+			intervalTime = interval;
 			currentBall += 1;
 			if (currentBall > totalBalls){
-				document.getElementById('button').style.display ='block';
+				setTimeout(displayResultsBtton, 3000);
 				clearTimeout(t);
 			}
 			document.getElementById('time').style.display = 'block';
@@ -39,6 +39,10 @@
 
 	function stopwatch() {
 		var t = setTimeout(add, 100);
+	}
+
+	function displayResultsBtton() {
+		document.getElementById('button').style.display ='block';
 	}
 
 </script>

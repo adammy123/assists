@@ -16,10 +16,11 @@ const unsigned long ballFeedRate = 3500;
 // Radio Definitions //
 ///////////////////////
 RF24 radio(7,8);
-const uint64_t b_pipes[4] = {0x0F0F0F0F11LL, 0x0F0F0F0F22LL, 0x0F0F0F0F33LL, 0x0F0F0F0F44LL};  
-const uint64_t n_pipes[4] = {0x1F1F1F1F11LL, 0x1F1F1F1F22LL, 0x1F1F1F1F33LL, 0x1F1F1F1F44LL};
+const uint64_t b_pipes[6] = {0x0F0F0F0F11LL, 0x0F0F0F0F22LL, 0x0F0F0F0F33LL, 0x0F0F0F0F44LL};  
+const uint64_t n_pipes[6] = {0x1F1F1F1F11LL, 0x1F1F1F1F22LL, 0x0F0F0F0F33LL, 0x0F0F0F0F44LL};
 const int max_wait = 3500;  //max time to wait for radio comm
-
+const bool targetResponseCheck = true;
+bool targetCheck[numGoals] = {false};
 
 //////////////////////
 // Data Definitions //
@@ -78,17 +79,37 @@ void setup() {
 
 void loop()
 {
-  // wait for cue from app
+
   Serial.println("waiting for app");
-  while(!start){
+  while(!_ready){
     delay(100);
   }
 
-  // for debugging purposes: use Serial Moniter input
-  //                         to start session instead of app
-//  Serial.println ("Hit a key to start");
-//  while(Serial.available() == 0){}
-//  byte temp = Serial.read();
+  // check reponses from targets
+  for(int i=0; i<numGoals; i++){
+    radio.openWritingPipe(b_pipes[i]);
+    radio.stopListening();
+    radio.write(&targetResponseCheck, sizeof(targetResponseCheck));
+    radio.startListening();
+    delay(10);
+    start_wait = millis();
+    timeout = false;
+    while(!radio.available() && !timeout){  
+      //check for timeout
+      if(millis() - start_wait > max_wait){
+        timeout = true;
+      }
+    }
+    radio.read( &targetResponseCheck, sizeof(targetResponseCheck));
+    if(!timeout){
+      targetCheck[i] = true;
+    }
+  }
+  
+  Serial.println("waiting for app");
+  while(!start){//wait for cue from app
+    delay(100);
+  }
   
   resetStats();
   Serial.println("Begin Base");
