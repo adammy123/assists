@@ -12,6 +12,7 @@ WiFiServer server(80);
 ////////////////////////
 // System Definitions //
 ////////////////////////
+const int numGoals = 3;
 const int totalBalls = 10;
 const int ballFeedRate = 3;   //seconds (excluding goTime)
 const float goTime = 0.5;     //seconds (time GO! flashed on screen)
@@ -33,6 +34,12 @@ int totalTimeTaken = 0;
 String html_string;
 bool _reset = false;
 bool _start = false;
+bool _ready = false;
+
+// Wire communication
+const byte startCommand = 1;
+const byte readyCommand = 2;
+byte targetStatus[numGoals];
 
 void setupWiFi(){
   WiFi.mode(WIFI_AP);
@@ -57,12 +64,37 @@ String home_(String html_string){
   html_string += "&nbsp;2. Have teammate ready with " + String(totalBalls) + " balls<br>\r\n";
   html_string += "&nbsp;3. Press start when ready!</p>\r\n";
 
+  // Button to redirect to the ready page
+  html_string += "<button type=\"button\" onclick=\"location.href = '/ready" + String(sessionNumber+1) + "';\">Start</button>\r\n";
+  html_string +=  "</body>\r\n</html>\n";
+  
+  return html_string;
+}
+
+String ready_html(String html_string){
+  // CSS styles
+  html_string += "<style>p{font-size:50pt;}button{height:50px;width:200px;font-size:20pt;}</style>\r\n";
+
+  // Target status check
+  html_string += "<body><p>Target status:<br><br>\r\n";
+  for (int i=0; i<numGoals; i++){
+    html_string += "Target " + String(i+1) + ": ";
+    if(targetStatus[i] == 1){
+      html_string += "OK!<br>\r\n";
+    }
+    else{
+      html_string += "BAD.<br>\r\n";
+    }
+  }
+  html_string += "<br></p>\r\n";
+  
   // Button to redirect to the session page
   html_string += "<button type=\"button\" onclick=\"location.href = '/session" + String(sessionNumber+1) + "';\">Start</button>\r\n";
   html_string +=  "</body>\r\n</html>\n";
   
   return html_string;
 }
+
 
 String session(String html_string){
   // CSS styles
@@ -271,9 +303,7 @@ void loop()
   else if (req.indexOf("/session") > 0) {
     if(!_start){
       Wire.beginTransmission(7);
-      byte command = 1;
-      Wire.write(command);
-      command += 1;
+      Wire.write(startCommand);
       Wire.endTransmission();
       _start = true;
       _reset = false;
@@ -281,10 +311,41 @@ void loop()
     html_string = session(html_string);
   }
 
+  // ready page
+  else if (req.indexOf("/ready") > 0) {
+    if(!_ready){
+      Wire.beginTransmission(7);
+      Wire.write(readyCommand);
+      Wire.endTransmission();
+      delay(50);
+
+      while(Wire.available()){
+        byte dump = Wire.read();
+      }
+
+      delay(3500*(numGoals + 1));
+      Wire.requestFrom(7, numGoals);
+      
+      
+      for(int i=0; i<numGoals; i++){
+        targetStatus[i] = Wire.read();
+      }
+      
+      while(Wire.available()){
+        byte dump = Wire.read();
+      }
+      
+      _ready = true;
+    }
+    
+    html_string = ready_html(html_string);
+  }
+
   // home page
   else {
     if(!_reset){
       resetStats();
+      _ready = false;
     }
     html_string = home_(html_string);
   }

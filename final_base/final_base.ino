@@ -21,7 +21,7 @@ const uint64_t n_pipes[4] = {0x1F1F1F1F11LL, 0x1F1F1F1F22LL, 0x1F1F1F1F33LL, 0x1
 const int max_wait = 3500;  //max time to wait for radio comm
 const bool targetResponseCheck = true;
 unsigned long targetResponseCheckDump;
-bool targetCheck[numGoals] = {false};
+byte targetCheck[numGoals];
 
 //////////////////////
 // Data Definitions //
@@ -41,8 +41,10 @@ unsigned long start_wait;
 unsigned long goalTime;
 bool timeout;
 bool start = false;
+bool _ready = false;
 bool goalStatus = false;
 bool sensing = false;
+bool commandToReceive = true;
 
 ///////////////////////
 // Error Definitions //
@@ -78,20 +80,19 @@ void setup() {
 
 void loop()
 {
-
+  
   // wait for cue from app
-//  Serial.println("waiting for app");
-//  while(!ready){
-//    delay(100);
-//  }
+  Serial.println("waiting for ready signal from app");
+  while(!_ready){
+    delay(100);
+  }
 
   // for debugging purposes: use Serial Moniter input
   //                         to start session instead of app
-  Serial.println ("Hit a key to ready");
-  while(Serial.available() == 0){}
-  byte temp = Serial.read();
+//  Serial.println ("Hit a key to ready");
+//  while(Serial.available() == 0){}
+//  byte temp = Serial.read();
 
-  // check reponses from targets
   for(int i=0; i<numGoals; i++){
     radio.openWritingPipe(b_pipes[i]);
     radio.stopListening();
@@ -107,33 +108,32 @@ void loop()
       }
     }
     radio.read( &targetResponseCheckDump, sizeof(targetResponseCheckDump));
-    if(!timeout){
-      targetCheck[i] = true;
-      Serial.print("Target ");
-      Serial.print(i+1);
-      Serial.println(" OK!");
+    if(timeout){
+      targetCheck[i] = 0;
+      isError = true;
+      targetWithError = i;
+      errorByte = (byte)(i+1);
     }
     else{
-      Serial.print("Target ");
-      Serial.print(i+1);
-      Serial.println(" BAD.");
+      targetCheck[i] = 1;
     }
     
     //inform chosen node to stop listening
     radio.openWritingPipe(b_pipes[i]);
     radio.stopListening();
     radio.write( &sensing, sizeof(sensing) );
-
+    Serial.print(targetCheck[i]);
   }
-  
-//  Serial.println("waiting for app");
-//  while(!start){//wait for cue from app
-//    delay(100);
-//  }
 
-  Serial.println ("Hit a key to start");
-  while(Serial.available() == 0){}
-  temp = Serial.read();
+  //wait for cue from app
+  Serial.println("waiting for start signal from app");
+  while(!start){
+    delay(100);
+  }
+
+//  Serial.println ("Hit a key to start");
+//  while(Serial.available() == 0){}
+//  temp = Serial.read();
   
   resetStats();
   Serial.println("Begin Base");
@@ -226,6 +226,7 @@ void loop()
   }
   
   start = false;
+  _ready = false;
   delay(1000); 
   
 }
@@ -239,43 +240,60 @@ int chooseGoal(int _numGoals){
 
 // function called when receive wire event from esp8266
 void receiveEvent(byte command){
-  if (command > 0){
-    // begin session
+
+  if(commandToReceive){
+    _ready = true;
+    isError = false;
+    targetWithError = -1;
+    errorByte = 0;
+  }
+  
+  else{
     start = true;
   }
+  commandToReceive = !commandToReceive;
 }
 
 // function called when receive a request event from esp8266
 void requestEvent(){
-  // because I2C buffer only hold 32 bytes, we send the data in two parts
-  // send first half of data
-  if(dataToSend){
-    sessionNumber += 1;
-    Wire.write(sessionNumber);
-    Wire.write(errorByte);
-    
-    for(int j=0; j<numBalls; j++){
-      Wire.write(target[j]);
-    }
-    for(int j=0; j<numBalls; j++){
-      Wire.write(hit[j]);
-    }
+
+  // send target status results:
+  if(_ready){
+    Wire.write(targetCheck, numGoals);
   }
 
-  // send second half of data
+  // send session results:
   else{
-    for(int j=0; j<numBalls; j++){
-      timeTakenByte[0] = (timeTaken[j] >> 8) & 0xFF;
-      timeTakenByte[1] = timeTaken[j] & 0xFF;
-      Wire.write(timeTakenByte, 2);
+    // because I2C buffer only hold 32 bytes, we send the data in two parts
+    // send first half of data
+    if(dataToSend){
+      sessionNumber += 1;
+      Wire.write(sessionNumber);
+      Wire.write(errorByte);
+      
+      for(int j=0; j<numBalls; j++){
+        Wire.write(target[j]);
+      }
+      for(int j=0; j<numBalls; j++){
+        Wire.write(hit[j]);
+      }
     }
+  
+    // send second half of data
+    else{
+      for(int j=0; j<numBalls; j++){
+        timeTakenByte[0] = (timeTaken[j] >> 8) & 0xFF;
+        timeTakenByte[1] = timeTaken[j] & 0xFF;
+        Wire.write(timeTakenByte, 2);
+      }
+    }
+  
+    dataToSend = !dataToSend;
   }
-
-  dataToSend = !dataToSend;
   
   while(Wire.available()){
-      byte dump = Wire.read();
-    }
+    byte dump = Wire.read();
+  }
 }
 
 void resetStats(){
@@ -283,9 +301,7 @@ void resetStats(){
     hit[i] = 0;
     target[i] = 0;
     timeTaken[i] = 0;
-    isError = false;
-    targetWithError = -1;
-    errorByte = 0;
+    _ready = false;
   }
   Serial.println("Stats have been reset.");
 }
