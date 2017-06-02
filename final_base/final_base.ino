@@ -8,7 +8,7 @@
 // System Definitions //
 ////////////////////////
 const int numBalls = 10;     //total number of balls
-const int numGoals = 3;     //total number of targets
+const int numGoals = 4;     //total number of targets
 const int interval = 3000;  //max time to hit target
 const unsigned long ballFeedRate = 3500;
 
@@ -82,16 +82,16 @@ void loop()
 {
   
   // wait for cue from app
-  Serial.println("waiting for ready signal from app");
-  while(!_ready){
-    delay(100);
-  }
+//  Serial.println("waiting for ready signal from app");
+//  while(!_ready){
+//    delay(100);
+//  }
 
   // for debugging purposes: use Serial Moniter input
   //                         to start session instead of app
-//  Serial.println ("Hit a key to ready");
-//  while(Serial.available() == 0){}
-//  byte temp = Serial.read();
+  Serial.println ("Hit a key to ready");
+  while(Serial.available() == 0){}
+  byte temp = Serial.read();
 
   for(int i=0; i<numGoals; i++){
     radio.openWritingPipe(b_pipes[i]);
@@ -126,14 +126,14 @@ void loop()
   }
 
   //wait for cue from app
-  Serial.println("waiting for start signal from app");
-  while(!start){
-    delay(100);
-  }
+//  Serial.println("waiting for start signal from app");
+//  while(!start){
+//    delay(100);
+//  }
 
-//  Serial.println ("Hit a key to start");
-//  while(Serial.available() == 0){}
-//  temp = Serial.read();
+  Serial.println ("Hit a key to start");
+  while(Serial.available() == 0){}
+  temp = Serial.read();
   
   resetStats();
   Serial.println("Begin Base");

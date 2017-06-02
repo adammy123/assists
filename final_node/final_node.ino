@@ -12,7 +12,7 @@
 ////////////////////////
 // System Definitions //
 ////////////////////////
-const int goalNumber = 3;
+const int goalNumber = 4;
 const int interval = 3000;
 
 ///////////////////////
