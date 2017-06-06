@@ -4,6 +4,9 @@
 #include "RF24.h"
 #include <Wire.h>
 
+bool serialMode = true;  // switch to true to enable debugging mode using a computer
+                         // and without the app
+
 ////////////////////////
 // System Definitions //
 ////////////////////////
@@ -80,63 +83,37 @@ void setup() {
 
 void loop()
 {
-  
-  // wait for cue from app
-//  Serial.println("waiting for ready signal from app");
-//  while(!_ready){
-//    delay(100);
-//  }
-
   // for debugging purposes: use Serial Moniter input
   //                         to start session instead of app
-  Serial.println ("Hit a key to ready");
-  while(Serial.available() == 0){}
-  byte temp = Serial.read();
-
-  for(int i=0; i<numGoals; i++){
-    radio.openWritingPipe(b_pipes[i]);
-    radio.stopListening();
-    radio.write(&targetResponseCheck, sizeof(targetResponseCheck));
-    radio.startListening();
-    delay(10);
-    start_wait = millis();
-    timeout = false;
-    while(!radio.available() && !timeout){  
-      //check for timeout
-      if(millis() - start_wait > max_wait){
-        timeout = true;
-      }
-    }
-    radio.read( &targetResponseCheckDump, sizeof(targetResponseCheckDump));
-    if(timeout){
-      targetCheck[i] = 0;
-      isError = true;
-      targetWithError = i;
-      errorByte = (byte)(i+1);
-    }
-    else{
-      targetCheck[i] = 1;
-    }
-    
-    //inform chosen node to stop listening
-    radio.openWritingPipe(b_pipes[i]);
-    radio.stopListening();
-    radio.write( &sensing, sizeof(sensing) );
-    Serial.print(targetCheck[i]);
+  if(serialMode){
+    Serial.println ("Hit a key to ready");
+    while(Serial.available() == 0){}
+    byte temp = Serial.read();
   }
 
-  //wait for cue from app
-//  Serial.println("waiting for start signal from app");
-//  while(!start){
-//    delay(100);
-//  }
+  // wait for cue from app
+  else{
+    Serial.println("waiting for ready signal from app");
+    while(!_ready){delay(100);}
+  }
 
-  Serial.println ("Hit a key to start");
-  while(Serial.available() == 0){}
-  temp = Serial.read();
+  checkTargetComm();
+
+  if(serialMode){
+    Serial.println ("Hit a key to start");
+    while(Serial.available() == 0){}
+    byte temp = Serial.read();
+  }
+  //wait for cue from app
+  else{
+    Serial.println("waiting for start signal from app");
+    while(!start){
+    delay(100);
+    }
+  }
   
   resetStats();
-  Serial.println("Begin Base");
+  if(serialMode) Serial.println("Begin Base");
 
   //run the drill
   goalTime = 0;
@@ -208,7 +185,7 @@ void loop()
       else{
         fatalError = true;
         errorByte = 100;
-        i = 10;
+//        i = 10;
       }
     }
     
@@ -235,6 +212,47 @@ void loop()
 int chooseGoal(int _numGoals){
   sensing = true;
   return random(_numGoals);
+}
+
+void checkTargetComm(){
+  
+  for(int i=0; i<numGoals; i++){
+    radio.openWritingPipe(b_pipes[i]);
+    radio.stopListening();
+    radio.write(&targetResponseCheck, sizeof(targetResponseCheck));
+    radio.startListening();
+    delay(10);
+    start_wait = millis();
+    timeout = false;
+    
+    while(!radio.available() && !timeout){  
+      //check for timeout
+      if(millis() - start_wait > max_wait){
+        timeout = true;
+      }
+    }
+    
+    radio.read( &targetResponseCheckDump, sizeof(targetResponseCheckDump));
+    
+    if(timeout){
+      targetCheck[i] = 0;
+      isError = true;
+      targetWithError = i;
+      errorByte = (byte)(i+1);
+    }
+    
+    else{
+      targetCheck[i] = 1;
+    }
+    
+    //inform chosen node to stop listening
+    radio.openWritingPipe(b_pipes[i]);
+    radio.stopListening();
+    radio.write( &sensing, sizeof(sensing) );
+    Serial.print(targetCheck[i]);
+    delay(200);
+  }
+  
 }
 
 

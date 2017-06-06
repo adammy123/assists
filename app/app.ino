@@ -6,7 +6,7 @@
 // WiFi Definitions //
 //////////////////////
 const String AP_NameString = "Assists"; //Wifi name
-const char WiFiAPPSK[] = "design384";   //Password
+const char WiFiAPPSK[] = "wildcats";   //Password
 WiFiServer server(80);
 
 ////////////////////////
@@ -62,10 +62,10 @@ String home_(String html_string){
   html_string += "Instructions:<br>\r\n";
   html_string += "&nbsp;1. Set up targets 20 feet from center<br>\r\n";
   html_string += "&nbsp;2. Have teammate ready with " + String(totalBalls) + " balls<br>\r\n";
-  html_string += "&nbsp;3. Press start when ready!</p>\r\n";
+  html_string += "&nbsp;3. Press ready to check for targets!</p>\r\n";
 
   // Button to redirect to the ready page
-  html_string += "<button type=\"button\" onclick=\"location.href = '/ready" + String(sessionNumber+1) + "';\">Start</button>\r\n";
+  html_string += "<button type=\"button\" onclick=\"location.href = '/ready" + String(sessionNumber+1) + "';\">Ready</button>\r\n";
   html_string +=  "</body>\r\n</html>\n";
   
   return html_string;
