@@ -12,7 +12,7 @@ WiFiServer server(80);
 ////////////////////////
 // System Definitions //
 ////////////////////////
-const int numGoals = 3;
+const int numGoals = 4;
 const int totalBalls = 10;
 const int ballFeedRate = 3;   //seconds (excluding goTime)
 const float goTime = 0.5;     //seconds (time GO! flashed on screen)

@@ -4,7 +4,7 @@
 #include "RF24.h"
 #include <Wire.h>
 
-bool serialMode = true;  // switch to true to enable debugging mode using a computer
+bool serialMode = false;  // switch to true to enable debugging mode using a computer
                          // and without the app
 
 ////////////////////////
